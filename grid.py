@@ -3,16 +3,15 @@ from funcs import *
 
 
 class grid():
-    def __init__(self, size, startPos=None, numBomb=2, numFood=2, windowWidth=1000, maxSteps=25):
+    def __init__(self, size, startPos=None, numBomb=2, numFood=2, windowWidth=1000, maxSteps=16, foodReward=10, bombReward=-10):
         self.stepsTaken = 0
         self.maxSteps = maxSteps
         self.terminate = False
         self.size = size
         width, height = self.size
-        self.numval = width*height
-        self.emptyValue = 0
-        self.foodValue = 1
-        self.bombValue = -1
+        
+        self.emptyValue, self.foodValue, self.bombValue = 0, 1, -1
+        self.foodReward, self.bombReward = foodReward, bombReward
         self.typemap = {self.emptyValue:"empty", self.bombValue:"bomb", self.foodValue:"food"}
         self.colormap = {self.bombValue:(.1, 0, 1), self.foodValue:(0, 1, .25), self.emptyValue:(.3, 0, 0)}
         self.agentColor = (1, 0.7, 0)
@@ -25,7 +24,7 @@ class grid():
         self.numFood = numFood
 
         self.tiles = np.ones((height, width), np.int32)*self.emptyValue
-        self.observation = np.zeros((3, height, width))
+        self.observation = np.zeros((3, height, width), np.float32)
         posx, posy = self.agentPos
         self.observation[0][posy][posx] = 1
 
@@ -40,25 +39,23 @@ class grid():
     def placeBombs(self, numBomb=None):
         num = self.numBomb if numBomb==None else numBomb
         width, height = self.size
-        maxw, maxh = width-1, height-1
         for i in range(num):
-            rx, ry = np.random.randint(0, maxw), np.random.randint(0, maxh)
+            rx, ry = np.random.randint(0, width), np.random.randint(0, height)
             while not self.isEmpty((rx, ry)) or (rx, ry)==self.agentPos:
-                rx, ry = np.random.randint(0, maxw), np.random.randint(0, maxh)
+                rx, ry = np.random.randint(0, width), np.random.randint(0, height)
             self.setBomb((rx, ry))
 
     def placeFood(self, numFood=None):
         num = self.numFood if numFood==None else numFood
         width, height = self.size
-        maxw, maxh = width-1, height-1
         for i in range(num):
-            rx, ry = np.random.randint(0, maxw), np.random.randint(0, maxh)
+            rx, ry = np.random.randint(0, width), np.random.randint(0, height)
             while not self.isEmpty((rx, ry)) or (rx, ry)==self.agentPos:
-                rx, ry = np.random.randint(0, maxw), np.random.randint(0, maxh)
+                rx, ry = np.random.randint(0, width), np.random.randint(0, height)
             self.setFood((rx, ry))
         
     def observe(self):
-        return self.observation
+        return np.array(self.observation, copy=True)
     
     
     def getTile(self, pos):
@@ -66,7 +63,7 @@ class grid():
         assert isint(x) and isint(y), f"non-int type in coordinates: ({pos})"
         return self.tiles[y][x]
     
-    def takeAction(self, action):
+    def doAction(self, action):
         # actions are 0,1,2,3. They mean move one square up,left,down,right respectively
         ax, ay = self.agentPos
         width, height = self.size
@@ -86,14 +83,14 @@ class grid():
         self.observation[0][ay][ax] = 1
         self.stepsTaken += 1
         self.terminate = self.stepsTaken == self.maxSteps
-        return val
+        return self.rewardOf(val)
     
     def reset(self):
         self.stepsTaken, self.terminate, self.agentPos = 0, False, self.startPos
 
         width, height = self.size
         self.tiles = np.ones((height, width), np.int32)*self.emptyValue
-        self.observation = np.zeros((3, height, width))
+        self.observation = np.zeros((3, height, width), np.float32)
         posx, posy = self.agentPos
         self.observation[0][posy][posx] = 1
 
@@ -127,6 +124,11 @@ class grid():
         x, y = pos
         return not (self.observation[1][y][x] or self.observation[2][y][x])
 
+    def rewardOf(self, val):
+        if val==self.bombValue: return self.bombReward
+        if val==self.foodValue: return self.foodReward
+        if val==self.emptyValue: return 0
+    
     def view(self, scale=1):
         sx, sy = self.size
         tileSize = self.tileSize
@@ -144,19 +146,20 @@ class grid():
         return im
     
     def __repr__(self):
-        rep = ""
         width, height = self.size
+        rep = "#"*(3*width+2) + "\n"
         ax, ay = self.agentPos
         for y in range(height):
+            rep += "#"
             for x in range(width):
-                if x==ax and y==ay: rep += f"{blue} X {endc}"
+                if x==ax and y==ay: rep += f"{blue} @ {endc}"
                 else:
                     val = self.getTile((x, y))
                     if val==self.bombValue: rep += f"{red} x {endc}"
-                    if val==self.foodValue: rep += f"{green} x {endc}"
-                    if val==self.emptyValue: rep += f"   " 
-            rep += "\n"
-        rep += "\n"
+                    if val==self.foodValue: rep += f"{green} o {endc}"
+                    if val==self.emptyValue: rep += f"   "
+            rep += "#\n"
+        rep += "#"*(3*width+2) + "\n"
         return rep
 
     def printObs(self):
