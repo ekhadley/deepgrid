@@ -1,5 +1,4 @@
 from tqdm import trange
-from matplotlib import pyplot as plt
 from utils import *
 from agent import *
 from env import *
@@ -10,9 +9,9 @@ a = agent(g)
 Tensor.training = True
 
 loadDir = f"D:\\wgmn\\deepq\\nets\\prime"
-saveDir = f"D:\\wgmn\\deepq\\nets\\second"
-a.load(loadDir)
-a.eps = 0.5
+saveDir = f"D:\\wgmn\\deepq\\nets\\prime"
+#a.load(loadDir)
+a.eps = 1
 saveEvery = 1000
 trainingStart = 100
 numEpisodes = 100_000
@@ -37,10 +36,6 @@ for ep in (t:=trange(numEpisodes, ncols=100, desc=cyan, unit="ep")):
         losses.append(loss.numpy()[0])
         episodeScores.append(epscore)
         print(f"{purple}{epscore=}, {a.eps=:.4f}, {red}loss={loss.numpy()}{endc}")
-        #if ep%1000 == 0:
-        #    plt.plot(episodeScores)
-        #    plt.plot(losses)
-        #    plt.show()
         if ep%saveEvery == 0:
             a.save(f"{saveDir}")
 

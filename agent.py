@@ -60,6 +60,18 @@ class model:
         self.lin2.weight.assign(other.lin2.weight.detach())
         #self.layers = [self.conv1, self.conv2, self.lin1, self.lin2]
 
+    def save(self, path):
+        np.save(f"{path}\\conv1.npy", self.conv1.weight.numpy())
+        np.save(f"{path}\\conv2.npy", self.conv2.weight.numpy())
+        np.save(f"{path}\\lin1.npy", self.lin1.weight.numpy())
+        np.save(f"{path}\\lin2.npy", self.lin2.weight.numpy())
+    
+    def load(self, path):
+        self.conv1.weight.assign(Tensor(np.load(f"{path}\\conv1.npy")))
+        self.conv2.weight.assign(Tensor(np.load(f"{path}\\conv2.npy")))
+        self.lin1.weight.assign(Tensor(np.load(f"{path}\\lin1.npy")))
+        self.lin2.weight.assign(Tensor(np.load(f"{path}\\lin2.npy")))
+
 ##########################################################################
 
 class agent:
@@ -70,7 +82,7 @@ class agent:
         self.actions = actions
         self.stepCost = stepCost
         self.eps = 1
-        self.decayRate = 0.99995
+        self.decayRate = 0.99997
         # states, actions, rewards, and next states stored in separate lists for sampling
         self.memory = [[] for i in range(5)]
         self.main = model(self.env.size, 4)
@@ -92,7 +104,7 @@ class agent:
         print(f"taking action {yellow}{cmd}{endc} gave a reward of {purple}{reward}{endc}. The agent now has a score of {cyan}{self.score}{endc} on step {self.env.stepsTaken}/{self.env.maxSteps}")
         return reward
 
-    def chooseAction(self, state, eps=None):
+    def chooseAction(self, state, eps=None, givePred=False):
         if eps is None:
             eps = self.eps
             self.eps *= self.decayRate
@@ -102,6 +114,7 @@ class agent:
             st = Tensor(state).reshape((1, *state.shape))
             pred = self.main(st).numpy()
             #print(f"{purple}{pred}{endc}")
+            if givePred: return np.argmax(pred), pred
             return np.argmax(pred)
 
     def doAction(self, action, store=True):
@@ -141,18 +154,10 @@ class agent:
         self.main.copy(self.target)
 
     def save(self, path):
-        np.save(f"{path}\\conv1.npy", self.target.conv1.weight.numpy())
-        np.save(f"{path}\\conv2.npy", self.target.conv2.weight.numpy())
-        np.save(f"{path}\\lin1.npy", self.target.lin1.weight.numpy())
-        np.save(f"{path}\\lin2.npy", self.target.lin2.weight.numpy())
-    
+        self.target.save(path)
     def load(self, path):
-        self.target.conv1.weight.assign(Tensor(np.load(f"{path}\\conv1.npy")))
-        self.target.conv2.weight.assign(Tensor(np.load(f"{path}\\conv2.npy")))
-        self.target.lin1.weight.assign(Tensor(np.load(f"{path}\\lin1.npy")))
-        self.target.lin2.weight.assign(Tensor(np.load(f"{path}\\lin2.npy")))
+        self.target.load(path)
         self.update()
-
 
 
 
