@@ -70,6 +70,7 @@ class agent:
         self.actions = actions
         self.stepCost = stepCost
         self.eps = 1
+        self.decayRate = 0.99995
         # states, actions, rewards, and next states stored in separate lists for sampling
         self.memory = [[] for i in range(5)]
         self.main = model(self.env.size, 4)
@@ -94,7 +95,7 @@ class agent:
     def chooseAction(self, state, eps=None):
         if eps is None:
             eps = self.eps
-            self.eps *= 0.9999
+            self.eps *= self.decayRate
         r = np.random.uniform()
         if r <= eps: return self.randomAction()
         else:

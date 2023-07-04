@@ -9,13 +9,13 @@ a = agent(g)
 
 Tensor.training = True
 
+loadDir = f"D:\\wgmn\\deepq\\nets\\prime"
+saveDir = f"D:\\wgmn\\deepq\\nets\\second"
+a.load(loadDir)
+a.eps = 0.5
 saveEvery = 1000
-saveDir = f"D:\\wgmn\\deepq\\nets\\prime"
-#a.load(saveDir)
-
 trainingStart = 100
 numEpisodes = 100_000
-
 episodeScores, losses = [], []
 for ep in (t:=trange(numEpisodes, ncols=100, desc=cyan, unit="ep")):
     while not g.terminate:
