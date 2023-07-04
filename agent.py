@@ -1,64 +1,86 @@
 import numpy as np
 from tinygrad.nn import Tensor
-from tinygrad.nn import optim
-from funcs import *
+from tinygrad import nn
+import os
+from utils import *
 
 class model:
-    def __init__(self, gridSize, actions, lr=.01):
+    def __init__(self, gridSize, actions, lr=.001):
         self.gridSize, self.actions, self.lr = gridSize, actions, lr
         width, height = gridSize
-        self.conv1 = Tensor.uniform(16, 3, 3, 3)
-        self.conv2 = Tensor.uniform(32, 16, 3, 3)
-        self.lin1 = Tensor.uniform(32*height*width, 512)
-        self.lin2 = Tensor.uniform(512, self.actions)
-        self.layers = [self.conv1, self.conv2, self.lin1, self.lin2]
-        self.opt = optim.SGD(self.layers, lr=self.lr)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1)
+        self.lin1 = nn.Linear(32*height*width, 512)
+        self.lin2 = nn.Linear(512, self.actions)
+        self.layers = [self.conv1.weight, self.conv2.weight, self.lin1.weight, self.lin2.weight]
+        
+        self.opt = nn.optim.SGD(self.layers, lr=self.lr)
 
     def forward(self, X: Tensor):
         sh = X.shape
         assert len(sh)==4, f"got input tensor shape {sh}. Should be length 4: (batch, channels, width, height)"
-        X = X.conv2d(self.conv1, padding=1).relu()
-        X = X.conv2d(self.conv2, padding=1).relu()
-        X = X.reshape(sh[0], sh[1]*sh[2]*sh[3]*self.covn1.shape[0])
-        X = X.dot(self.lin1).relu()
-        X = X.dot(self.lin2).relu()
-        return X.log_softmax()
+        X = self.conv1(X).softmax()
+        X = self.conv2(X).softmax()
+        X = X.reshape(sh[0], -1)
+        X = self.lin1(X)
+        X = self.lin2(X)
+        return X
     def __call__(self, X): return self.forward(X)
 
-    def loss(self, out:Tensor, action:int, reward:float):
-        return (out[action]-reward).pow(2)
+    def loss(self, experience, out, discount=0.9):
+        states, actions, rewards, nstates, terminal = experience
+        trueq = rewards if terminal else rewards + discount*self.forward(nstates).max(axis=1)
+        mask = np.zeros(out.shape, np.float32)
+        for i, a in enumerate(actions): mask[i, a] = 1
+        mask = Tensor(mask)
+        loss = ((out*mask).sum(axis=1) - trueq).pow(2).mean()
 
-    def train(self, X, action, reward):
-        out = self.forward(X)
-        los = self.loss(out, action, reward)
+        #print("\n")
+        #print(f"{blue}{rewards=}{endc}")
+        #print(f"{blue}{trueq.numpy()=}{endc}")
+        #print(f"{blue}{out.numpy()=}{endc}")
+        #print(f"{blue}{mask.numpy()=}{endc}")
+        #print(f"{blue}{loss.numpy()=}{endc}")
+        
+        return loss
+
+    def train(self, experience, discount=0.9):
+        states, actions, rewards, nstates, terminals = experience
+        out = self.forward(states)
+        los = self.loss(experience, out, discount=discount)
         self.opt.zero_grad()
         los.backward()
         self.opt.step()
         return out, los
     
     def copy(self, other):
-        Tensor.no_grad = True
-        self.conv1 = other.conv1*1
-        self.conv2 = other.conv2*1
-        self.lin1 = other.lin1*1
-        self.lin2 = other.lin2*1
-        self.layers = [self.conv1, self.conv2, self.lin1, self.lin2]
-        self.opt = optim.SGD(self.layers, lr=self.lr)
-        Tensor.no_grad = False
+        self.conv1.weight.assign(other.conv1.weight.detach())
+        self.conv2.weight.assign(other.conv2.weight.detach())
+        self.lin1.weight.assign(other.lin1.weight.detach())
+        self.lin2.weight.assign(other.lin2.weight.detach())
+        #self.layers = [self.conv1, self.conv2, self.lin1, self.lin2]
 
+##########################################################################
 
 class agent:
     def __init__(self, env, stepCost=1, actions=4):
         self.env = env
         self.score = 0
+        self.gam = 0.95
         self.actions = actions
         self.stepCost = stepCost
         self.eps = 1
         # states, actions, rewards, and next states stored in separate lists for sampling
-        self.memory = ([], [], [], [])
+        self.memory = [[] for i in range(5)]
         self.main = model(self.env.size, 4)
         self.target = model(self.env.size, 4)
-        self.target.copy(self.main)
+        self.update()
+
+    def reset(self):
+        s = self.score
+        self.score = 0
+        self.update()
+        return s
 
     def doUserAction(self):
         amap = {"w": 0, "a":1, "s":2, "d":3}
@@ -70,31 +92,70 @@ class agent:
         return reward
 
     def chooseAction(self, state, eps=None):
-        if eps is None: eps = self.eps
+        if eps is None:
+            eps = self.eps
+            self.eps *= 0.9999
         r = np.random.uniform()
-        if r <= eps: return np.random.randint(0, self.actions)
+        if r <= eps: return self.randomAction()
         else:
-            sh = np.shape(state)
-            st = Tensor(state).reshape((1, sh[0], sh[1], sh[2]))
-            pred = self.target(st)
+            st = Tensor(state).reshape((1, *state.shape))
+            pred = self.main(st).numpy()
+            #print(f"{purple}{pred}{endc}")
             return np.argmax(pred)
 
     def doAction(self, action, store=True):
         if store: s = self.env.observe()
-        reward = self.env.doAction(action)
+        reward = self.env.doAction(action) - self.stepCost
         if store:
-            self.memory[0].append(s)
-            self.memory[1].append(action)
-            self.memory[2].append(reward)
-            self.memory[3].append(self.env.observe())
-        self.score -= self.stepCost
+            experience = (s, action, reward, self.env.observe(), 1*(self.env.stepsTaken==self.env.maxSteps))
+            self.remember(experience)
         self.score += reward
         return reward
 
-    def randomAction(self):
-        return self.doAction(np.random.randint(0,self.actions))
+    def remember(self, experience):
+        for i in range(5):
+            self.memory[i].append(experience[i])
 
-    def sampleMemory(self, num):
+    def doRandomAction(self):
+        return self.doAction(self.randomAction())
+    def randomAction(self):
+        return np.random.randint(0,self.actions)
+
+    def sampleMemory(self, num, tensor=True):
+        assert len(self.memory[1]) > num, f"requested sample size greater than number of recorded experiences"
         samp = np.random.randint(0, len(self.memory[0]), size=(num))
-        states, actions, rewards, nstates = self.memory
-        return states[samp], actions[samp], rewards[samp], nstates[samp]
+        expSample = [[], [], [], [], []]
+        for s in samp:
+            for i in range(len(self.memory)):
+                expSample[i].append(self.memory[i][s])
+        if tensor:
+            expSample[0] = Tensor(expSample[0])
+            expSample[3] = Tensor(expSample[3])
+        return tuple(expSample)
+
+    def train(self, experience):
+        return self.target.train(experience, discount=self.gam)
+
+    def update(self):
+        self.main.copy(self.target)
+
+    def save(self, path):
+        np.save(f"{path}\\conv1.npy", self.target.conv1.weight.numpy())
+        np.save(f"{path}\\conv2.npy", self.target.conv2.weight.numpy())
+        np.save(f"{path}\\lin1.npy", self.target.lin1.weight.numpy())
+        np.save(f"{path}\\lin2.npy", self.target.lin2.weight.numpy())
+    
+    def load(self, path):
+        self.target.conv1.weight.assign(Tensor(np.load(f"{path}\\conv1.npy")))
+        self.target.conv2.weight.assign(Tensor(np.load(f"{path}\\conv2.npy")))
+        self.target.lin1.weight.assign(Tensor(np.load(f"{path}\\lin1.npy")))
+        self.target.lin2.weight.assign(Tensor(np.load(f"{path}\\lin2.npy")))
+        self.update()
+
+
+
+
+
+
+
+
