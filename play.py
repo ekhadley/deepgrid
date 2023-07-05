@@ -5,7 +5,7 @@ from env import *
 
 g = grid((8, 5), numFood=12, numBomb=12)
 a = agent(g)
-loadDir = f"D:\\wgmn\\deepq\\nets\\prime"
+loadDir = f"D:\\wgmn\\deepq\\nets\\5layer\\5000"
 a.load(loadDir)
 a.eps = 0
 

@@ -11,8 +11,9 @@ class model:
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1)
         self.lin1 = nn.Linear(32*height*width, 512)
-        self.lin2 = nn.Linear(512, self.actions)
-        self.layers = [self.conv1.weight, self.conv2.weight, self.lin1.weight, self.lin2.weight]
+        self.lin2 = nn.Linear(512, 64)
+        self.lin3 = nn.Linear(64, self.actions)
+        self.layers = [self.conv1.weight, self.conv2.weight, self.lin1.weight, self.lin2.weight, self.lin3.weight]
         
         self.opt = nn.optim.SGD(self.layers, lr=self.lr)
 
@@ -24,6 +25,7 @@ class model:
         X = X.reshape(sh[0], -1)
         X = self.lin1(X)
         X = self.lin2(X)
+        X = self.lin3(X)
         return X
     def __call__(self, X): return self.forward(X)
 
@@ -34,14 +36,6 @@ class model:
         for i, a in enumerate(actions): mask[i, a] = 1
         mask = Tensor(mask)
         loss = ((out*mask).sum(axis=1) - trueq).pow(2).mean()
-
-        #print("\n")
-        #print(f"{blue}{rewards=}{endc}")
-        #print(f"{blue}{trueq.numpy()=}{endc}")
-        #print(f"{blue}{out.numpy()=}{endc}")
-        #print(f"{blue}{mask.numpy()=}{endc}")
-        #print(f"{blue}{loss.numpy()=}{endc}")
-        
         return loss
 
     def train(self, experience, discount=0.9):
@@ -52,12 +46,13 @@ class model:
         los.backward()
         self.opt.step()
         return out, los
-    
+
     def copy(self, other):
         self.conv1.weight.assign(other.conv1.weight.detach())
         self.conv2.weight.assign(other.conv2.weight.detach())
         self.lin1.weight.assign(other.lin1.weight.detach())
         self.lin2.weight.assign(other.lin2.weight.detach())
+        self.lin3.weight.assign(other.lin3.weight.detach())
         #self.layers = [self.conv1, self.conv2, self.lin1, self.lin2]
 
     def save(self, path):
@@ -65,12 +60,14 @@ class model:
         np.save(f"{path}\\conv2.npy", self.conv2.weight.numpy())
         np.save(f"{path}\\lin1.npy", self.lin1.weight.numpy())
         np.save(f"{path}\\lin2.npy", self.lin2.weight.numpy())
-    
+        np.save(f"{path}\\lin3.npy", self.lin3.weight.numpy())
+
     def load(self, path):
         self.conv1.weight.assign(Tensor(np.load(f"{path}\\conv1.npy")))
         self.conv2.weight.assign(Tensor(np.load(f"{path}\\conv2.npy")))
         self.lin1.weight.assign(Tensor(np.load(f"{path}\\lin1.npy")))
         self.lin2.weight.assign(Tensor(np.load(f"{path}\\lin2.npy")))
+        self.lin3.weight.assign(Tensor(np.load(f"{path}\\lin3.npy")))
 
 ##########################################################################
 
@@ -82,7 +79,7 @@ class agent:
         self.actions = actions
         self.stepCost = stepCost
         self.eps = 1
-        self.decayRate = 0.99997
+        self.decayRate = 0.9999
         # states, actions, rewards, and next states stored in separate lists for sampling
         self.memory = [[] for i in range(5)]
         self.main = model(self.env.size, 4)
