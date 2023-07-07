@@ -79,7 +79,7 @@ class agent:
         self.actions = actions
         self.stepCost = stepCost
         self.eps = 1
-        self.decayRate = 0.9999
+        self.decayRate = 0.99995
         # states, actions, rewards, and next states stored in separate lists for sampling
         self.memory = [[] for i in range(5)]
         self.main = model(self.env.size, 4)
@@ -106,13 +106,13 @@ class agent:
             eps = self.eps
             self.eps *= self.decayRate
         r = np.random.uniform()
-        if r <= eps: return self.randomAction()
+        if r <= eps: action = self.randomAction()
         else:
             st = Tensor(state).reshape((1, *state.shape))
             pred = self.main(st).numpy()
-            #print(f"{purple}{pred}{endc}")
-            if givePred: return np.argmax(pred), pred
-            return np.argmax(pred)
+            action = np.argmax(pred)
+            if givePred: return action, pred
+        return action
 
     def doAction(self, action, store=True):
         if store: s = self.env.observe()

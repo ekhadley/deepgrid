@@ -87,13 +87,18 @@ class grid():
         self.terminate = self.stepsTaken == self.maxSteps
         return self.rewardOf(val)
     
-    def reset(self):
+    def reset(self, randomPos=True):
         self.stepsTaken, self.terminate, self.agentPos = 0, False, self.startPos
 
         width, height = self.size
         self.tiles = np.ones((height, width), np.int32)*self.emptyValue
         self.observation = np.zeros((3, height, width), np.float32)
+        
+        if randomPos:
+            self.agentPos = (np.random.randint(0, width), np.random.randint(0, height))
+        else: self.agentPos = self.startPos
         posx, posy = self.agentPos
+
         self.observation[0][posy][posx] = 1
 
         self.placeBombs()
