@@ -46,6 +46,7 @@ because a series of random choices rarely carry the agent to distant points. Thi
 for a lot longer and get complex behavior. Probably increasing training efficiency and finding the right decay rate is important.
 
 TODO: Implement prioritized replay, different exploration strategies, different loss function
-
+(NOTE: how to randomly select actions: we can select uniformly, we can weight for/against extreme prediction scores, or we can
+weight higher for pairs/groups of actions which are rated similarly, trying to find out which are not like the others. /shrug)
 
 
