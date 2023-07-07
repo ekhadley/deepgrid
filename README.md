@@ -3,13 +3,13 @@ This is a small project, my practice run at deep Q learning. The agent and envir
 the deep learning is done with [tinygrad](https://github.com/geohot/tinygrad).
 
 ### The environment
-    The task is a simple grid world. You make a grid instance (I used 8x5 in my testing). The agent occuppies
+The task is a simple grid world. You make a grid instance (I used 8x5 in my testing). The agent occuppies
 one position, and each episode reward and punishment tiles are placed randomly around it. The observation
 for this environment is a binary 3 channel Tensor which has ones in each channel coreresponding to  the agent's
 position, food, and bomb positions. Default scores are -1 step cost, 10 for rewards, -10 for bombs. simple as it gets.
 
 ### The agent
-    The agent is similairly a "baby's first Q learner" type of guy. It can move in one of 4 directions per turn, each
+The agent is similairly a "baby's first Q learner" type of guy. It can move in one of 4 directions per turn, each
 turn nets it a reward value. Every step it records that step as an "experience" which is sampled later to train the
 target model. It always starts in the center of the grid. It has a pair of neural nets in the typical deep Q fashion.
 This was the main architecture I played with:
@@ -28,7 +28,7 @@ where the agent always began in the center of the grid. net2 was trained for lon
 agent's starting position is randomized each episode. Differences are discussed in the next secion.
 
 ## Performance
-    I did not keep track of exactly how much training was done for each of the 2 models. net1 was probably around 3 hours,
+I did not keep track of exactly how much training was done for each of the 2 models. net1 was probably around 3 hours,
 net2 was around 5. net1 averages around 10 points per episode, (with the same starting position), and net 2 averages about
 13, meaning they're both grabbing about 3 rewards per episode. Not bad, but I wouldve liked to see more long distance 
 thinking becuase you should be able to get like 40-50 every episode. The main issue is that it doesnt go very far for rewards.
