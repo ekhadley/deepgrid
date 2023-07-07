@@ -41,7 +41,8 @@ poor actions, making it realize that they are not as bad as it thought, and the 
 is that to randomly make the correct series of random decisions which carrry an agent against its wishes to a distant reward, becomes
 exponentially unlikely as the distance increases. If a reward is n tiles away and epsilon is e, then the probability of choosing the
 correct action (out of 4 actions) that take it to that square as quickly as possible is (e^n)*(1/4^n): e/4 for n=1, e^2/16, e^3/64
-you get the idea. it gets small fast.
+you get the idea. it gets small fast. This could explain why epsilon greedy fails to imprint the proper lessons on the net; simply 
+becuase series of random choices rarely carry the agent to distant points. This is just my guess.
 
-TODO: Implement priotitized replay, different exploration strategies, different loss fucntion
+TODO: Implement priotitized replay, different exploration strategies, different loss function
 
