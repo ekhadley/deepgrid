@@ -13,9 +13,10 @@ class model:
         self.lin1 = nn.Linear(32*height*width, 512)
         self.lin2 = nn.Linear(512, 64)
         self.lin3 = nn.Linear(64, self.actions)
-        self.layers = [self.conv1.weight, self.conv2.weight, self.lin1.weight, self.lin2.weight, self.lin3.weight]
+        #self.layers = [self.conv1.weight, self.conv2.weight, self.lin1.weight, self.lin2.weight, self.lin3.weight]
+        self.layers = [self.conv1, self.conv2, self.lin1, self.lin2, self.lin3]
         
-        self.opt = nn.optim.SGD(self.layers, lr=self.lr)
+        self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
 
     def forward(self, X: Tensor):
         sh = X.shape
@@ -53,7 +54,6 @@ class model:
         self.lin1.weight.assign(other.lin1.weight.detach())
         self.lin2.weight.assign(other.lin2.weight.detach())
         self.lin3.weight.assign(other.lin3.weight.detach())
-        #self.layers = [self.conv1, self.conv2, self.lin1, self.lin2]
 
     def save(self, path):
         np.save(f"{path}\\conv1.npy", self.conv1.weight.numpy())

@@ -2,16 +2,23 @@ from tqdm import trange
 from utils import *
 from agent import *
 from env import *
+from tinygrad.helpers import getenv
+
+print(f"{yellow}{getenv('GPU')=}{endc}")
+print(f"{yellow}{getenv('CUDA')=}{endc}")
+print(f"{yellow}{getenv('DEVICE')=}{endc}")
+print(f"{yellow}{getenv('JIT')=}{endc}")
 
 g = grid((8, 5), numFood=12, numBomb=12)
 a = agent(g)
-loadDir = f"D:\\wgmn\\deepq\\net1"
+
+loadDir = f"D:\\wgmn\\deepq\\net2"
 a.load(loadDir)
 a.eps = 0
 
 epscores = []
 #while 1:
-for i in trange(300):
+for i in trange(300, ncols=100, desc=cyan, unit="ep"):
     while not g.terminate:
         #reward = a.doRandomAction()
         state = g.observe()

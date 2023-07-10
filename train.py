@@ -3,21 +3,28 @@ import math
 from utils import *
 from agent import *
 from env import *
+from tinygrad.helpers import getenv
+
+
+print(f"{yellow}{getenv('GPU')=}{endc}")
+print(f"{yellow}{getenv('CUDA')=}{endc}")
+print(f"{yellow}{getenv('DEVICE')=}{endc}")
+print(f"{yellow}{getenv('JIT')=}{endc}")
 
 g = grid((8, 5), numFood=12, numBomb=12)
 a = agent(g)
 
 Tensor.training = True
 
-loadDir = f"D:\\wgmn\\deepq\\net2\\2500"
-a.load(loadDir)
+#loadDir = f"D:\\wgmn\\deepq\\net2\\2500"
+#a.load(loadDir)
 
-saveDir = f"D:\\wgmn\\deepq\\net2"
+saveDir = f"D:\\wgmn\\deepq\\netxxx"
 
-a.eps = 1
+a.eps = 0
 a.decayRate = 0.999999
-saveEvery = 100
-trainingStart = 64
+saveEvery = 500
+trainingStart = 256
 numEpisodes = 100_000
 episodeScores, losses = [], []
 for ep in (t:=trange(numEpisodes, ncols=100, desc=cyan, unit="ep")):
@@ -35,7 +42,7 @@ for ep in (t:=trange(numEpisodes, ncols=100, desc=cyan, unit="ep")):
 
         #print(g)
         if ep >= trainingStart:
-            experience = a.sampleMemory(32)
+            experience = a.sampleMemory(128)
             out, loss = a.train(experience)
 
     #print(g)

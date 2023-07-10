@@ -115,6 +115,7 @@ class grid():
             self.observation[1][y][x] = 0
             self.observation[2][y][x] = 0
         else: assert 0, f"given value {val} is not a known tile type"
+
     def setEmpty(self, pos):
         self.setTile(pos, self.emptyValue)
     def setBomb(self, pos):
