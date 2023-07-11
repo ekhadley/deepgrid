@@ -4,13 +4,14 @@ from agent import *
 from env import *
 from tinygrad.helpers import getenv
 
-print(f"{yellow}{getenv('GPU')=}{endc}")
-print(f"{yellow}{getenv('CUDA')=}{endc}")
-print(f"{yellow}{getenv('DEVICE')=}{endc}")
-print(f"{yellow}{getenv('JIT')=}{endc}")
 
 g = grid((8, 5), numFood=12, numBomb=12)
 a = agent(g)
+
+print(f"{yellow}{getenv('GPU')=}{endc}")
+print(f"{yellow}{getenv('CUDA')=}{endc}")
+print(f"{yellow}{getenv('JIT')=}{endc}")
+print(f"{red}{a.main.lin1.weight.device=}{endc}")
 
 loadDir = f"D:\\wgmn\\deepq\\net2"
 a.load(loadDir)
@@ -22,7 +23,9 @@ for i in trange(300, ncols=100, desc=cyan, unit="ep"):
     while not g.terminate:
         #reward = a.doRandomAction()
         state = g.observe()
-        action, pred = a.chooseAction(state, givePred=True)
+        out = a.chooseAction(state, givePred=True)
+        if isinstance(out, tuple): action, pred = out
+        else: action, pred = out, np.zeros((4))
         reward = a.doAction(action, store=False)
         #print(f"taking action {yellow}{action}{endc} gave a reward of {purple}{reward}{endc}. The agent now has a score of {cyan}{a.score}{endc} on step {g.stepsTaken}/{g.maxSteps}")
         #print(f"{purple}{pred=}{endc}")
