@@ -5,25 +5,24 @@ from agent import *
 from env import *
 from tinygrad.helpers import getenv
 
-
-print(f"{yellow}{getenv('GPU')=}{endc}")
-print(f"{yellow}{getenv('CUDA')=}{endc}")
-print(f"{yellow}{getenv('DEVICE')=}{endc}")
-print(f"{yellow}{getenv('JIT')=}{endc}")
-
 g = grid((8, 5), numFood=12, numBomb=12)
 a = agent(g)
 
-Tensor.training = True
+print(f"{yellow}{getenv('GPU')=}{endc}")
+print(f"{yellow}{getenv('CUDA')=}{endc}")
+print(f"{yellow}{getenv('JIT')=}{endc}")
+print(f"{red}{a.main.lin1.weight.device=}{endc}")
 
-#loadDir = f"D:\\wgmn\\deepq\\net2\\2500"
-#a.load(loadDir)
-
+loadDir = f"D:\\wgmn\\deepq\\net2"
+a.load(loadDir)
 saveDir = f"D:\\wgmn\\deepq\\netxxx"
 
+donothing(a)
+
+Tensor.training = True
 a.eps = 0
 a.decayRate = 0.999999
-saveEvery = 500
+saveEvery = 100
 trainingStart = 256
 numEpisodes = 100_000
 episodeScores, losses = [], []
@@ -35,14 +34,14 @@ for ep in (t:=trange(numEpisodes, ncols=100, desc=cyan, unit="ep")):
         if isinstance(output, tuple): action, pred = output
         else: action, pred = output, np.zeros((4))
         reward = a.doAction(action)
-        if math.isnan(np.sum(pred)):
+        if np.isnan(pred).any():
             rb = 100*(ep//100)
             print(f"\n{red}nan'd out on {ep}. rolling back to version {rb}{endc}")
             a.load(f"{saveDir}\\{rb}")
 
         #print(g)
         if ep >= trainingStart:
-            experience = a.sampleMemory(128)
+            experience = a.sampleMemory(256)
             out, loss = a.train(experience)
 
     #print(g)
