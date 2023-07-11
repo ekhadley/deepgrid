@@ -43,11 +43,8 @@ exponentially unlikely as the distance increases. If a reward is n tiles away an
 correct action (out of 4 actions) that take it to that square as quickly as possible is (e^n)*(1/4^n): e/4 for n=1, e^2/16, e^3/64
 you get the idea. it gets small fast. This could explain why epsilon greedy fails to imprint the proper lessons on the net; simply 
 because a series of random choices rarely carry the agent to distant points. This is just my guess. You could probably just train it
-for a lot longer and get complex behavior. Probably increasing training efficiency and finding the right decay rate is important.
+for a lot longer and get complex behavior. All in all both models must have only seen between .5 and a 1 million frames. Probably
+increasing training efficiency and finding the right decay rate is important.
 
-TODO: Implement prioritized replay, different exploration strategies, different loss function
-
-(NOTE: how to randomly select actions: we can select uniformly, we can weight for/against extreme prediction scores, or we can
-weight higher for pairs/groups of actions which are rated similarly, trying to find out which are not like the others. /shrug)
 
 
