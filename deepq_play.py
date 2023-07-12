@@ -1,6 +1,6 @@
 from tqdm import trange
 from utils import *
-from agent import *
+from deepgrid.deepq_agent import *
 from env import *
 from tinygrad.helpers import getenv
 
@@ -13,7 +13,7 @@ print(f"{yellow}{getenv('CUDA')=}{endc}")
 print(f"{yellow}{getenv('JIT')=}{endc}")
 print(f"{red}{a.main.lin1.weight.device=}{endc}")
 
-loadDir = f"D:\\wgmn\\deepq\\net2"
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
 a.load(loadDir)
 a.eps = 0
 
