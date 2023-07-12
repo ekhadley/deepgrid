@@ -96,18 +96,19 @@ class agent:
         print(f"taking action {yellow}{cmd}{endc} gave a reward of {purple}{reward}{endc}. The agent now has a score of {cyan}{self.score}{endc} on step {self.env.stepsTaken}/{self.env.maxSteps}")
         return reward
 
-    def chooseAction(self, state, eps=None, givePred=False):
+    def chooseAction(self, state, eps=None):
         if eps is None:
             eps = self.eps
             self.eps *= self.decayRate
         r = np.random.uniform()
-        if r <= eps: action = self.randomAction()
+        if r <= eps:
+            pred = np.zeros((4))
+            return self.randomAction(), pred, True
         else:
             st = Tensor(state).reshape((1, *state.shape))
             pred = self.main(st).numpy()
             action = np.argmax(pred)
-            if givePred: return action, pred
-        return action
+            return action, pred, False
 
     def doAction(self, action, store=True):
         if store: s = self.env.observe()

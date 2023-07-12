@@ -13,14 +13,12 @@ print(f"{yellow}{getenv('CUDA')=}{endc}")
 print(f"{yellow}{getenv('JIT')=}{endc}")
 print(f"{red}{a.main.lin1.weight.device=}{endc}")
 
-loadDir = f"D:\\wgmn\\deepq\\net2"
+loadDir = f"D:\\wgmn\\deepgrid\\net2"
 a.load(loadDir)
-saveDir = f"D:\\wgmn\\deepq\\netxxx"
-
-donothing(a)
+saveDir = f"D:\\wgmn\\deepgrid\\netxxx"
 
 Tensor.training = True
-a.eps = 0
+a.eps = 1
 a.decayRate = 0.999999
 saveEvery = 100
 trainingStart = 256
@@ -30,14 +28,12 @@ for ep in (t:=trange(numEpisodes, ncols=100, desc=cyan, unit="ep")):
     while not g.terminate:
         #reward = a.doRandomAction()
         state = g.observe()
-        output = a.chooseAction(state, givePred=True)
-        if isinstance(output, tuple): action, pred = output
-        else: action, pred = output, np.zeros((4))
-        reward = a.doAction(action)
+        action, pred, wasRandom = a.chooseAction(state)
         if np.isnan(pred).any():
-            rb = 100*(ep//100)
+            rb = saveEvery*(ep//saveEvery)
             print(f"\n{red}nan'd out on {ep}. rolling back to version {rb}{endc}")
             a.load(f"{saveDir}\\{rb}")
+        a.doAction(action)
 
         #print(g)
         if ep >= trainingStart:
