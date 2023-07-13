@@ -16,31 +16,32 @@ class model:
         #self.layers = [self.conv1.weight, self.conv2.weight, self.lin1.weight, self.lin2.weight, self.lin3.weight]
         self.layers = [self.conv1, self.conv2, self.lin1, self.lin2, self.lin3]
         self.names = ["conv1", "conv2", "lin1", "lin2", "lin3"]
-        
+
         self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
 
     def forward(self, X: Tensor):
         sh = X.shape
         assert len(sh)==4, f"got input tensor shape {sh}. Should be length 4: (batch, channels, width, height)"
-        X = self.conv1(X).softmax()
-        X = self.conv2(X).softmax()
+        #X = self.conv1(X).softmax()
+        #X = self.conv2(X).softmax()
+        X = self.conv1(X).leakyrelu()
+        X = self.conv2(X).leakyrelu()
         X = X.reshape(sh[0], -1)
-        X = self.lin1(X)
-        X = self.lin2(X)
+        X = self.lin1(X).sigmoid()
+        X = self.lin2(X).sigmoid()
         X = self.lin3(X)
         return X
     def __call__(self, X): return self.forward(X)
 
-    def loss(self, experience, out, discount=0.9):
+    def loss(self, experience, out, discount=1):
         states, actions, rewards, nstates, terminal = experience
-        trueq = rewards if terminal else rewards + discount*self.forward(nstates).max(axis=1)
-        mask = np.zeros(out.shape, np.float32)
-        for i, a in enumerate(actions): mask[i, a] = 1
-        mask = Tensor(mask)
-        loss = ((out*mask).sum(axis=1) - trueq).pow(2).mean()
+        nextout = discount*self.forward(nstates).max(axis=1)
+        trueQ = rewards + (terminal-1).abs()*nextout
+        predQ = (out*actions).sum(axis=1)
+        loss = (predQ - trueQ).pow(2).mean()
         return loss
 
-    def train(self, experience, discount=0.9):
+    def train(self, experience, discount=1.0):
         states, actions, rewards, nstates, terminals = experience
         out = self.forward(states)
         los = self.loss(experience, out, discount=discount)
@@ -68,7 +69,7 @@ class agent:
     def __init__(self, env, stepCost=1, actions=4):
         self.env = env
         self.score = 0
-        self.gam = 0.95
+        self.gamma = 1
         self.actions = actions
         self.stepCost = stepCost
         self.eps = 1
@@ -105,7 +106,8 @@ class agent:
             pred = np.zeros((4))
             return self.randomAction(), pred, True
         else:
-            st = Tensor(state).reshape((1, *state.shape))
+            if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
+            else: st = state.reshape((1, *state.shape))
             pred = self.main(st).numpy()
             action = np.argmax(pred)
             return action, pred, False
@@ -114,7 +116,9 @@ class agent:
         if store: s = self.env.observe()
         reward = self.env.doAction(action) - self.stepCost
         if store:
-            experience = (s, action, reward, self.env.observe(), 1*(self.env.stepsTaken==self.env.maxSteps))
+            action_hot = np.zeros((self.actions), np.float32)
+            action_hot[action] = 1
+            experience = (s, action_hot, reward, self.env.observe(), 1*(self.env.stepsTaken==self.env.maxSteps))
             self.remember(experience)
         self.score += reward
         return reward
@@ -136,12 +140,11 @@ class agent:
             for i in range(len(self.memory)):
                 expSample[i].append(self.memory[i][s])
         if tensor:
-            expSample[0] = Tensor(expSample[0])
-            expSample[3] = Tensor(expSample[3])
+            for i in range(len(expSample)): expSample[i] = Tensor(expSample[i])
         return tuple(expSample)
 
     def train(self, experience):
-        return self.target.train(experience, discount=self.gam)
+        return self.target.train(experience, discount=self.gamma)
 
     def update(self):
         self.main.copy(self.target)
