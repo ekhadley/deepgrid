@@ -1,7 +1,6 @@
 from tqdm import trange
-import math
+from deepq_agent import *
 from utils import *
-from deepgrid.deepq_agent import *
 from env import *
 from tinygrad.helpers import getenv
 
@@ -13,40 +12,42 @@ print(f"{yellow}{getenv('CUDA')=}{endc}")
 print(f"{yellow}{getenv('JIT')=}{endc}")
 print(f"{red}{a.main.lin1.weight.device=}{endc}")
 
-loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
-a.load(loadDir)
-saveDir = f"D:\\wgmn\\deepgrid\\deepq_netxxx"
+startVersion = 0
+#loadDir = f"D:\\wgmn\\deepgrid\\net\\{startVersion}"
+#a.load(loadDir)
+saveDir = f"D:\\wgmn\\deepgrid\\net"
 
 Tensor.training = True
-a.eps = 1
-a.decayRate = 0.999999
+a.eps = 1.0
+a.decayRate = 0.99999
 saveEvery = 100
 trainingStart = 256
 numEpisodes = 100_000
 episodeScores, losses = [], []
-for ep in (t:=trange(numEpisodes, ncols=100, desc=cyan, unit="ep")):
+for i in (t:=trange(numEpisodes, ncols=100, desc=cyan, unit="ep")):
+    ep = i + startVersion
     while not g.terminate:
         #reward = a.doRandomAction()
         state = g.observe()
         action, pred, wasRandom = a.chooseAction(state)
-        if np.isnan(pred).any():
-            rb = saveEvery*(ep//saveEvery)
-            print(f"\n{red}nan'd out on {ep}. rolling back to version {rb}{endc}")
-            a.load(f"{saveDir}\\{rb}")
         a.doAction(action)
 
         #print(g)
-        if ep >= trainingStart:
-            experience = a.sampleMemory(256)
+        if i >= trainingStart:
+            experience = a.sampleMemory(128)
             out, loss = a.train(experience)
+            if np.isnan(loss.numpy()).any():
+                rb = saveEvery*(ep//saveEvery)
+                print(f"\n{red}nan'd out on {ep}. rolling back to version {rb}{endc}")
+                a.load(f"{saveDir}\\{rb}")
 
     #print(g)
     g.reset()
     epscore = a.reset()
-    if ep >= trainingStart:
+    if i >= trainingStart:
         losses.append(loss.numpy()[0])
         episodeScores.append(epscore)
-        #print(f"{purple}{epscore=}, {a.eps=:.4f}, {red}loss={loss.numpy()}{endc}")
+        #print(f"{purple}{loss.numpy()=}{endc}")
 
         t.set_description(f"{purple}{epscore=}, {a.eps=:.4f}, {red}loss={loss.numpy()}{blue}")
         if ep%saveEvery == 0:
