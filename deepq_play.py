@@ -1,6 +1,6 @@
 from tqdm import trange
 from utils import *
-from deepgrid.deepq_agent import *
+from deepq_agent import *
 from env import *
 from tinygrad.helpers import getenv
 
@@ -13,7 +13,7 @@ print(f"{yellow}{getenv('CUDA')=}{endc}")
 print(f"{yellow}{getenv('JIT')=}{endc}")
 print(f"{red}{a.main.lin1.weight.device=}{endc}")
 
-loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
+loadDir = f"D:\\wgmn\\deepgrid\\net\\1000"
 a.load(loadDir)
 a.eps = 0
 
@@ -23,17 +23,15 @@ for i in trange(300, ncols=100, desc=cyan, unit="ep"):
     while not g.terminate:
         #reward = a.doRandomAction()
         state = g.observe()
-        out = a.chooseAction(state, givePred=True)
-        if isinstance(out, tuple): action, pred = out
-        else: action, pred = out, np.zeros((4))
+        action, pred, wasRandom = a.chooseAction(state)
         reward = a.doAction(action, store=False)
-        #print(f"taking action {yellow}{action}{endc} gave a reward of {purple}{reward}{endc}. The agent now has a score of {cyan}{a.score}{endc} on step {g.stepsTaken}/{g.maxSteps}")
-        #print(f"{purple}{pred=}{endc}")
-
-        #print(g)
-        #im = g.view()
-        #cv2.imshow("grid", im)
-        #cv2.waitKey(1)
+        print(f"taking action {yellow}{action}{endc} gave a reward of {purple}{reward}{endc}. The agent now has a score of {cyan}{a.score}{endc} on step {g.stepsTaken}/{g.maxSteps}")
+        print(f"{yellow}{pred=}{endc}")
+        
+        im = g.view()
+        cv2.imshow("grid", im)
+        cv2.waitKey(150)
+        print(g)
 
     g.reset()
     epscores.append(a.reset())
