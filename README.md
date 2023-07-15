@@ -16,4 +16,7 @@ number of rewards per step. Because the default number of steps is only 16, you 
 a portion of the grid to totally exploit before you get reset. Smart agents take effecient paths, 
 choosing to exploit the most food-rich regions of the grid. Really smart agents even learn to do things
 like tanking a bomb in order to get access to two or more rewards.  
-The ekhadley (human) baseline is about 50 points per episode, including the default step cost of -1.
+The ekhadley (human) baseline is about 50 points per episode, including the default step cost of -1.  
+Below I'll go over the basics of each method implemented, and the performance after training.
+
+## Deep Q
