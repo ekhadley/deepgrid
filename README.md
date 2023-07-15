@@ -21,6 +21,11 @@ like tanking a bomb in order to get access to two or more rewards.
 The ekhadley (human) baseline is about 50 points per episode, including the default step cost of -1.  
 Below I'll go over the basics of each method implemented, and the performance after training.
 
+- [x] 
+- [ ]
+- [o]
+
+
 ## Deep Q
 Deep Q is the simplest drl method to implement so it seemed like a good starting point. The goal of deep
 Q is to learn the value of taking each possible action possible for a given input state. The policy used
