@@ -1,7 +1,9 @@
 # Deep RL
 This is my implementation of a few different deep RL approaches, all applied to a simple custom
 environment. It is a small grid (I used 8x5 to train all the included nets) in which you have
-an agent (@), what I have termed food (o), giving a reward, and bombs (x), giving negative reward:  
+an agent (@), what I have termed food (o), giving a reward, and bombs (x), giving negative reward.
+default parameters are: 16 steps/ep, -1 step cost, +-10 for food/bomb, 12 of each, running into a
+wall does nothing, random starting position every ep. Example starting state:
 <pre>
 ##########################
 # o  o     x  x  o  x  o #
@@ -32,3 +34,4 @@ The Q net is supposed to represent the sum of expected rewards from now till for
 Q value of a state-action pair as the reward we actually got, plus the Q value of the resulting state. We
 teach the net to estimate all future rewards by only labelling the reward we got right now. This voodoo
 apparently works for updating weights, but means the actual loss number doesnt really measure anything useful.
+This is a pretty common property of RL algorithms.
