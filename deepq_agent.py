@@ -33,29 +33,39 @@ class model:
         return X
     def __call__(self, X): return self.forward(X)
 
-    def loss(self, experience, out:Tensor, discount=1):
+    def loss(self, experience, out:Tensor, discount=1, debug=False):
         states, actions, rewards, nstates, terminal = experience
-        tmask = (-1*terminal+1)
-        nextpred = discount*self.forward(nstates)
-        nextout = discount*nextpred.max(axis=1)
-        trueQ = rewards + tmask*nextout
+        #states, actions, rewards, nstates, terminal, statePred, nextPred_ = experience
+        #if np.isnan(nextPred_.numpy()).any():
+        #    nextpred = self.forward(nstates)
+        #else:
+        #    nextpred = nextPred_.reshape(states.shape[0], -1)
+        nextpred = self.forward(nstates)
+        tmask = 1 - terminal
+        trueQ = rewards + discount*tmask*(nextpred.max(axis=1))
         predQ = (out*actions).sum(axis=1)
-        diff = (predQ - trueQ)
-        #loss = diff.pow(2).sum()
+        diff = predQ - trueQ
         loss = diff.pow(2).sum()
         
-        #print(f"{blue}{tmask.numpy()=}{endc}")
-        #print(f"{underline}{rewards.numpy()=}{endc}")
-        #print(f"{red}{nextpred.numpy()=}{endc}")
-        #print(f"{red}{nextout.numpy()=}{endc}")
-        #print(f"{green}{trueQ.numpy()=}{endc}")
-        #print(f"{yellow}{predQ.numpy()=}{endc}")
-        #print(f"{purple}{diff.numpy()=}{endc}")
-        #print(f"{bold}{loss.numpy()=}{endc}\n")
+        if debug:
+            print(f"{blue}{tmask.numpy()=}{endc}")
+            print(f"{blue}{out.shape=}{endc}")
+            print(f"{underline}{rewards.numpy()=}{endc}")
+            print(f"{red}{nextpred.numpy()=}{endc}")
+            print(f"{red}{nextpred.max(axis=1).numpy()=}{endc}")
+            print(f"{green}{trueQ.numpy()=}{endc}")
+            print(f"{yellow}{predQ.numpy()=}{endc}")
+            print(f"{purple}{diff.numpy()=}{endc}")
+            print(f"{bold}{loss.numpy()=}{endc}\n")
         return loss
 
     def train(self, experience, discount=1.0):
         states, actions, rewards, nstates, terminals = experience
+        #states, actions, rewards, nstates, terminals, statePred, nextPred = experience
+        #if np.isnan(statePred[0].numpy()).any():
+        #    out = self.forward(states)
+        #else:
+        #    out = statePred.reshape(states.shape[0], -1)
         out = self.forward(states)
         los = self.loss(experience, out, discount=discount)
         self.opt.zero_grad()
@@ -76,7 +86,10 @@ class model:
             s = np.load(f"{path}\\{name}.npy")
             layer = self.__getattribute__(name)
             layer.weight.assign(s)
+
+
 ##########################################################################
+
 
 class agent:
     def __init__(self, env, stepCost=1, actions=4):
@@ -87,13 +100,13 @@ class agent:
         self.stepCost = stepCost
         self.epsilon = 1
         self.decayRate = 0.999999
-        # states, actions, rewards, and next states stored in separate lists for sampling
-        self.memory = [[] for i in range(5)]
+        self.maxMemory = 10_000
+        self.memTypes = 5
+        # (states, actions, rewards, next_state, is_terminal)
+        self.memory = [[] for i in range(self.memTypes)]
         self.main = model(self.env.size, 4)
         self.target = model(self.env.size, 4)
         self.update()
-
-    def donothing(): return
 
     def reset(self):
         s = self.score
@@ -110,35 +123,39 @@ class agent:
         print(f"taking action {yellow}{cmd}{endc} gave a reward of {purple}{reward}{endc}. The agent now has a score of {cyan}{self.score}{endc} on step {self.env.stepsTaken}/{self.env.maxSteps}")
         return reward
 
-    def chooseAction(self, state, epsilon=None):
+    def chooseAction(self, state):
+        if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
+        else: st = state.reshape((1, *state.shape))
+        pred = self.main(st).numpy()
+        action = np.argmax(pred)
+        return action, pred
+
+    def epsRandom(self, epsilon=None):
         if epsilon is None:
             epsilon = self.epsilon
-            self.epsilon *= self.decayRate
         r = np.random.uniform()
-        if r <= epsilon:
-            pred = np.zeros((4))
-            return self.randomAction(), pred, True
-        else:
-            if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
-            else: st = state.reshape((1, *state.shape))
-            pred = self.main(st).numpy()
-            action = np.argmax(pred)
-            return action, pred, False
+        #return True means make a random choice
+        return r <= epsilon
 
-    def doAction(self, action, store=True):
-        if store: s = self.env.observe()
+    def doAction(self, action):
         reward = self.env.doAction(action) - self.stepCost
-        if store:
-            action_hot = np.zeros((self.actions), np.float32)
-            action_hot[action] = 1
-            experience = (s, action_hot, reward, self.env.observe(), 1*(self.env.stepsTaken==self.env.maxSteps))
-            self.remember(experience)
         self.score += reward
         return reward
 
     def remember(self, experience):
-        for i in range(5):
-            self.memory[i].append(experience[i])
+        le = len(experience)
+        assert le == self.memTypes, f"got experience tuple of length {le}. number of memory categories is set to {self.memTypes}"
+        #state, action, reward, nextState, terminal, statePred, nextPred = experience
+        state, action, reward, nextState, terminal = experience
+        hot = np.eye(self.actions)[action]
+        self.memory[0].append(state)
+        self.memory[1].append(hot)
+        self.memory[2].append(reward)
+        self.memory[3].append(nextState)
+        self.memory[4].append(terminal)
+        #self.memory[5].append(statePred)
+        #self.memory[6].append(nextPred)
+        if len(self.memory[0]) > self.maxMemory: self.memory.pop(0)
 
     def doRandomAction(self):
         return self.doAction(self.randomAction())
@@ -148,20 +165,21 @@ class agent:
     def sampleMemory(self, num, tensor=True):
         assert len(self.memory[1]) > num, f"requested sample size greater than number of recorded experiences"
         samp = np.random.randint(0, len(self.memory[0]), size=(num))
-        expSample = [[], [], [], [], []]
+        memlen = len(self.memory)
+        expSample = [[] for i in range(memlen)]
         for s in samp:
-            for i in range(len(self.memory)):
-                expSample[i].append(self.memory[i][s])
+            for i, mem in enumerate(expSample):
+                mem.append(self.memory[i][s])
         if tensor:
-            for i in range(len(expSample)): expSample[i] = Tensor(expSample[i])
+            for i, mem in enumerate(expSample):
+                t = Tensor(expSample[i])
+                expSample[i] = t
         return tuple(expSample)
 
     def train(self, experience):
         return self.target.train(experience, discount=self.gamma)
-
     def update(self):
         self.main.copy(self.target)
-
     def save(self, path):
         self.target.save(path)
     def load(self, path):

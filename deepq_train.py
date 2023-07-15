@@ -12,29 +12,37 @@ print(f"{yellow}{getenv('CUDA')=}{endc}")
 print(f"{yellow}{getenv('JIT')=}{endc}")
 print(f"{red}{a.main.lin1.weight.device=}{endc}")
 
-startVersion = 30400
-loadDir = f"D:\\wgmn\\deepgrid\\netx\\{startVersion}"
+startVersion = 0
+#loadDir = f"D:\\wgmn\\deepgrid\\netx\\{startVersion}"
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
 a.load(loadDir)
-saveDir = f"D:\\wgmn\\deepgrid\\netx"
 
+saveDir = f"D:\\wgmn\\deepgrid\\netx"
 Tensor.training = True
 epscores, losses = [], []
 a.epsilon = 1 
 a.decayRate = 0.99999
+a.maxMemmory = 10_000
 saveEvery = 100
-trainingStart = 256
+sampleSize = 16
+trainingStart = 2*sampleSize
 numEpisodes = 100_000
 for i in (t:=trange(numEpisodes, ncols=100, desc=blue, unit="ep")):
     ep = i + startVersion
     while not g.terminate:
-        #reward = a.doRandomAction()
         state = g.observe()
-        action, pred, wasRandom = a.chooseAction(state)
-        a.doAction(action)
+        if a.epsRandom():
+            action = a.randomAction()
+        else:
+            action, pred = a.chooseAction(state)
+        reward = a.doAction(action)
+        a.epsilon *= a.decayRate
+        
+        exp = (state, action, reward, g.observe(), 1*g.terminate)
+        a.remember(exp)
 
-        #print(g)
         if i >= trainingStart:
-            experience = a.sampleMemory(8)
+            experience = a.sampleMemory(sampleSize)
             out, loss = a.train(experience)
             if np.isnan(loss.numpy()).any():
                 rb = saveEvery*(ep//saveEvery)
