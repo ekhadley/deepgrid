@@ -1,9 +1,9 @@
 # Deep RL
 This is my implementation of a few different deep RL approaches, all applied to a simple custom
-environment. It is a small grid (I used 8x5 to train all the included nets) in which you have
-an agent (@), what I have termed food (o), giving a reward, and bombs (x), giving negative reward.
-default parameters are: 16 steps/ep, -1 step cost, +-10 for food/bomb, 12 of each, running into a
-wall does nothing, random starting position every ep. Example starting state:
+environment. It is a small grid in which you have an agent (@), what I have termed food (o),
+giving a reward, and bombs (x), giving negative reward. Default parameters are: 8x5 grid, 16
+steps/ep, -1 step cost, +-10 for food/bomb, 12 of each, running into a wall does nothing, random
+starting position every ep. Example starting state:
 <pre>
 ##########################
 # o  o     x  x  o  x  o #
