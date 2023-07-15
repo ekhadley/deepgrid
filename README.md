@@ -21,13 +21,12 @@ like tanking a bomb in order to get access to two or more rewards.
 The ekhadley (human) baseline is about 50 points per episode, including the default step cost of -1.  
 Below I'll go over the basics of each method implemented, and the performance after training.
 
-## Deep Q
+## Deep Q Learner.
 Deep Q is the simplest drl method to implement so it seemed like a good starting point. The goal of deep
-Q is to learn the value of taking each possible action possible for a given input state. The policy used
-once our Q net has been trained is simply to choose at every point the action for which the net predicts
-the greatest reward. During training, a portion of actions are taken uniform-randomly in order to 
-explore and learn about actions which the net believed to be bad, which they otherwise wouldnt have 
-explored.  
+Q is to learn the value of taking every action for a given input state. The policy used once our Q net has
+been trained is simply to choose at every point the action for which the net predicts the greatest reward.
+During training, a portion of actions are taken uniform-randomly in order to  explore and learn about
+actions which the net believed to be bad, which they otherwise wouldnt have explored.  
 For the loss function we use this trick that apparently works:
 $Loss(state, action, reward, nextState) = forward(state) - (reward + discount*max(forward(nextState)))$
 The Q net is supposed to represent the sum of expected rewards from now till forever. We define the "true"
@@ -35,3 +34,6 @@ Q value of a state-action pair as the reward we actually got, plus the Q value o
 teach the net to estimate all future rewards by only labelling the reward we got right now. This voodoo
 apparently works for updating weights, but means the actual loss number doesnt really measure anything useful.
 This is a pretty common property of RL algorithms.
+
+## Simple Policy Optimization
+
