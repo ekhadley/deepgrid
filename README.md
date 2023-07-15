@@ -26,5 +26,9 @@ once our Q net has been trained is simply to choose at every point the action fo
 the greatest reward. During training, a portion of actions are taken uniform-randomly in order to 
 explore and learn about actions which the net believed to be bad, which they otherwise wouldnt have 
 explored.  
-The loss function uses this trick that just seems odd to me that it actually works:
+Fir the loss function we use this trick that apparently works:
 $Loss(state, action, reward, next_state) = forward(state) - (reward + discount*max(forward(next_state)))$
+The Q net is supposed to represent the sum of expected rewards from now till forever. We define the "true"
+Q value of a state-action pair as the reward we actually got, plus the Q value of the resulting state. We
+teach the net to estimate all future rewards by only labelling the reward we got right now. This voodoo
+apparently works for updating weights, but means the actual loss number doesnt really measure anything useful.
