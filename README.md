@@ -20,3 +20,11 @@ The ekhadley (human) baseline is about 50 points per episode, including the defa
 Below I'll go over the basics of each method implemented, and the performance after training.
 
 ## Deep Q
+Deep Q is the simplest drl method to implement so it seemed like a good starting point. The goal of deep
+Q is to learn the value of taking each possible action possible for a given input state. The policy used
+once our Q net has been trained is simply to choose at every point the action for which the net predicts
+the greatest reward. During training, a portion of actions are taken uniform-randomly in order to 
+explore and learn about actions which the net believed to be bad, which they otherwise wouldnt have 
+explored.  
+The loss function uses this trick that just seems odd to me that it actually works:
+$\large Loss(state, action, reward, next_state) = forward(state) - (reward + discount*max(forward(next_state)))$
