@@ -27,4 +27,4 @@ the greatest reward. During training, a portion of actions are taken uniform-ran
 explore and learn about actions which the net believed to be bad, which they otherwise wouldnt have 
 explored.  
 The loss function uses this trick that just seems odd to me that it actually works:
-$\large Loss(state, action, reward, next_state) = forward(state) - (reward + discount*max(forward(next_state)))$
+$Loss(state, action, reward, next_state) = forward(state) - (reward + discount*max(forward(next_state)))$
