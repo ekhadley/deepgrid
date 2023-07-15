@@ -13,11 +13,11 @@ class model:
         self.lin1 = nn.Linear(32*height*width, 512)
         self.lin2 = nn.Linear(512, 64)
         self.lin3 = nn.Linear(64, self.actions)
-        #self.layers = [self.conv1.weight, self.conv2.weight, self.lin1.weight, self.lin2.weight, self.lin3.weight]
         self.layers = [self.conv1, self.conv2, self.lin1, self.lin2, self.lin3]
         self.names = ["conv1", "conv2", "lin1", "lin2", "lin3"]
 
-        self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
+        #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
+        self.opt = nn.optim.AdamW([layer.weight for layer in self.layers], lr=self.lr)
 
     def forward(self, X: Tensor):
         sh = X.shape
@@ -27,18 +27,31 @@ class model:
         X = self.conv1(X).leakyrelu()
         X = self.conv2(X).leakyrelu()
         X = X.reshape(sh[0], -1)
-        X = self.lin1(X).sigmoid()
-        X = self.lin2(X).sigmoid()
+        X = self.lin1(X).relu()
+        X = self.lin2(X).relu()
         X = self.lin3(X)
         return X
     def __call__(self, X): return self.forward(X)
 
-    def loss(self, experience, out, discount=1):
+    def loss(self, experience, out:Tensor, discount=1):
         states, actions, rewards, nstates, terminal = experience
-        nextout = discount*self.forward(nstates).max(axis=1)
-        trueQ = rewards + (terminal-1).abs()*nextout
+        tmask = (-1*terminal+1)
+        nextpred = discount*self.forward(nstates)
+        nextout = discount*nextpred.max(axis=1)
+        trueQ = rewards + tmask*nextout
         predQ = (out*actions).sum(axis=1)
-        loss = (predQ - trueQ).pow(2).mean()
+        diff = (predQ - trueQ)
+        #loss = diff.pow(2).sum()
+        loss = diff.pow(2).sum()
+        
+        #print(f"{blue}{tmask.numpy()=}{endc}")
+        #print(f"{underline}{rewards.numpy()=}{endc}")
+        #print(f"{red}{nextpred.numpy()=}{endc}")
+        #print(f"{red}{nextout.numpy()=}{endc}")
+        #print(f"{green}{trueQ.numpy()=}{endc}")
+        #print(f"{yellow}{predQ.numpy()=}{endc}")
+        #print(f"{purple}{diff.numpy()=}{endc}")
+        #print(f"{bold}{loss.numpy()=}{endc}\n")
         return loss
 
     def train(self, experience, discount=1.0):
@@ -72,7 +85,7 @@ class agent:
         self.gamma = 1
         self.actions = actions
         self.stepCost = stepCost
-        self.eps = 1
+        self.epsilon = 1
         self.decayRate = 0.999999
         # states, actions, rewards, and next states stored in separate lists for sampling
         self.memory = [[] for i in range(5)]
@@ -97,12 +110,12 @@ class agent:
         print(f"taking action {yellow}{cmd}{endc} gave a reward of {purple}{reward}{endc}. The agent now has a score of {cyan}{self.score}{endc} on step {self.env.stepsTaken}/{self.env.maxSteps}")
         return reward
 
-    def chooseAction(self, state, eps=None):
-        if eps is None:
-            eps = self.eps
-            self.eps *= self.decayRate
+    def chooseAction(self, state, epsilon=None):
+        if epsilon is None:
+            epsilon = self.epsilon
+            self.epsilon *= self.decayRate
         r = np.random.uniform()
-        if r <= eps:
+        if r <= epsilon:
             pred = np.zeros((4))
             return self.randomAction(), pred, True
         else:

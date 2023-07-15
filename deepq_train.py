@@ -12,19 +12,19 @@ print(f"{yellow}{getenv('CUDA')=}{endc}")
 print(f"{yellow}{getenv('JIT')=}{endc}")
 print(f"{red}{a.main.lin1.weight.device=}{endc}")
 
-startVersion = 0
-#loadDir = f"D:\\wgmn\\deepgrid\\net\\{startVersion}"
-#a.load(loadDir)
-saveDir = f"D:\\wgmn\\deepgrid\\net"
+startVersion = 30400
+loadDir = f"D:\\wgmn\\deepgrid\\netx\\{startVersion}"
+a.load(loadDir)
+saveDir = f"D:\\wgmn\\deepgrid\\netx"
 
 Tensor.training = True
-a.eps = 1.0
+epscores, losses = [], []
+a.epsilon = 1 
 a.decayRate = 0.99999
 saveEvery = 100
 trainingStart = 256
 numEpisodes = 100_000
-episodeScores, losses = [], []
-for i in (t:=trange(numEpisodes, ncols=100, desc=cyan, unit="ep")):
+for i in (t:=trange(numEpisodes, ncols=100, desc=blue, unit="ep")):
     ep = i + startVersion
     while not g.terminate:
         #reward = a.doRandomAction()
@@ -34,7 +34,7 @@ for i in (t:=trange(numEpisodes, ncols=100, desc=cyan, unit="ep")):
 
         #print(g)
         if i >= trainingStart:
-            experience = a.sampleMemory(128)
+            experience = a.sampleMemory(8)
             out, loss = a.train(experience)
             if np.isnan(loss.numpy()).any():
                 rb = saveEvery*(ep//saveEvery)
@@ -44,12 +44,11 @@ for i in (t:=trange(numEpisodes, ncols=100, desc=cyan, unit="ep")):
     #print(g)
     g.reset()
     epscore = a.reset()
+    epscores.append(epscore)
     if i >= trainingStart:
-        losses.append(loss.numpy()[0])
-        episodeScores.append(epscore)
-        #print(f"{purple}{loss.numpy()=}{endc}")
-
-        t.set_description(f"{purple}{epscore=}, {a.eps=:.4f}, {red}loss={loss.numpy()}{blue}")
+        recent_scores = np.mean(epscores[-10:-1])
+        desc = f"{purple}{recent_scores=:.2f}, {cyan}{a.epsilon=:.4f}, {red}loss={loss.numpy()}{blue}"
+        t.set_description(desc)
         if ep%saveEvery == 0:
             pth = f"{saveDir}\\{ep}"
             os.makedirs(pth, exist_ok=True)

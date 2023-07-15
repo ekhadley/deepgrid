@@ -95,7 +95,7 @@ class grid():
         self.observation = np.zeros((3, height, width), np.float32)
         
         if randomPos:
-            self.agentPos = (np.random.randint(0, width), np.random.randint(0, height))
+            self.startPos = (np.random.randint(0, width), np.random.randint(0, height))
         else: self.agentPos = self.startPos
         posx, posy = self.agentPos
 
