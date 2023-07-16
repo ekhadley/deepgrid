@@ -9,24 +9,16 @@ g = grid((8, 5), numFood=12, numBomb=12)
 a = agent(g)
 
 
-startVersion = 800
-#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
-loadDir = f"D:\\wgmn\\deepgrid\\netx\\{startVersion}"
+startVersion = 1200
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\{startVersion}"
 a.load(loadDir)
 
-#l = a.main.lin2.weight.detach().numpy().flatten()
-#ws = l
-#ax = plt.hist(ws, bins=1000)
-#print(f"{yellow}{l.shape=}{endc}")
-#print(f"{red}{l.mean()=}{endc}")
-#print(f"{purple}{np.var(l)=}{endc}")
-#plt.show()
-
-
+Tensor.training = False
 a.epsilon = 0
 epscores = []
 #while 1:
-for i in trange(300, ncols=100, desc=purple, unit="ep"):
+for i in (t:=trange(300, ncols=100, desc=purple, unit="ep")):
     while not g.terminate:
         state = g.observe()
         action, pred = a.chooseAction(state)
@@ -41,6 +33,5 @@ for i in trange(300, ncols=100, desc=purple, unit="ep"):
 
     g.reset()
     epscores.append(a.reset())
-
-ascore = np.mean(epscores)
-print(f"{blue}{ascore=}{endc}")
+    ascore = np.mean(epscores)
+    t.set_description(f"{blue}{ascore=:.2f}{purple}")

@@ -17,14 +17,14 @@ startVersion = 0
 loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
 a.load(loadDir)
 
-saveDir = f"D:\\wgmn\\deepgrid\\netx"
+saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
 Tensor.training = True
 epscores, losses = [], []
-a.epsilon = 1 
+a.epsilon = .05
 a.decayRate = 0.99999
 a.maxMemmory = 10_000
 saveEvery = 100
-sampleSize = 16
+sampleSize = 8
 trainingStart = 2*sampleSize
 numEpisodes = 100_000
 for i in (t:=trange(numEpisodes, ncols=100, desc=blue, unit="ep")):
@@ -38,7 +38,7 @@ for i in (t:=trange(numEpisodes, ncols=100, desc=blue, unit="ep")):
         reward = a.doAction(action)
         a.epsilon *= a.decayRate
         
-        exp = (state, action, reward, g.observe(), 1*g.terminate)
+        exp = (state, action, reward, g.observe(tensor=False), 1*g.terminate)
         a.remember(exp)
 
         if i >= trainingStart:
@@ -54,8 +54,8 @@ for i in (t:=trange(numEpisodes, ncols=100, desc=blue, unit="ep")):
     epscore = a.reset()
     epscores.append(epscore)
     if i >= trainingStart:
-        recent_scores = np.mean(epscores[-10:-1])
-        desc = f"{purple}{recent_scores=:.2f}, {cyan}{a.epsilon=:.4f}, {red}loss={loss.numpy()}{blue}"
+        recents = np.mean(epscores[-10:-1])
+        desc = f"{purple}recent scores: {recents:.2f}, {cyan}{a.epsilon=:.4f}, {red}loss={loss.numpy()}{blue}"
         t.set_description(desc)
         if ep%saveEvery == 0:
             pth = f"{saveDir}\\{ep}"
