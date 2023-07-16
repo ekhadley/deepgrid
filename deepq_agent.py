@@ -1,6 +1,7 @@
 import numpy as np
 from tinygrad.nn import Tensor
 from tinygrad import nn
+import time
 from utils import *
 from agent import *
 

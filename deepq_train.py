@@ -2,6 +2,7 @@ from tqdm import trange
 from deepq_agent import *
 from utils import *
 from env import *
+import os
 from tinygrad.helpers import getenv
 
 g = grid((8, 5), numFood=12, numBomb=12)

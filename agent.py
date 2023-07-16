@@ -7,6 +7,7 @@ class agent:
     def __init__(self, *args, **kwargs):
         print(red, "dont initialize agent, use a specific subtype", endc)
         raise NotImplementedError
+
     def reset(self):
         s = self.score
         self.score = 0
