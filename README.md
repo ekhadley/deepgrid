@@ -33,7 +33,13 @@ The Q net is supposed to represent the sum of expected rewards from now till for
 Q value of a state-action pair as the reward we actually got, plus the Q value of the resulting state. We
 teach the net to estimate all future rewards by only labelling the reward we got right now. This voodoo
 apparently works for updating weights, but means the actual loss number doesnt really measure anything useful.
-This is a pretty common property of RL algorithms.
+This is a pretty common property of RL algorithms.  
+
+The trained net I have included (trained for the default parameters I gave at the top) has played about 45k
+episodes, totalling ~700k frames (most training was done on batch size 8, a bit with 16). I noticed that at
+the end, doing extra training with a high epsilon was making performance go down. Training with low epsilon,
+I continued to see gains. I think I couldve been much more sample effecient with a better decay rate, who
+knows. Sometimes exploitation is exploration.
 
 ## Simple Policy Optimization
 
