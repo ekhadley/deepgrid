@@ -5,7 +5,7 @@ from env import *
 from tinygrad.helpers import getenv
 
 g = grid((8, 5), numFood=12, numBomb=12)
-a = agent(g)
+a = qAgent(g)
 
 print(f"{yellow}{getenv('GPU')=}{endc}")
 print(f"{yellow}{getenv('CUDA')=}{endc}")
