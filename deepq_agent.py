@@ -22,8 +22,6 @@ class model:
     def forward(self, X: Tensor):
         sh = X.shape
         assert len(sh)==4, f"got input tensor shape {sh}. Should be length 4: (batch, channels, width, height)"
-        #X = self.conv1(X).softmax()
-        #X = self.conv2(X).softmax()
         X = self.conv1(X).leakyrelu()
         X = self.conv2(X).leakyrelu()
         X = X.reshape(sh[0], -1)
@@ -124,9 +122,9 @@ class agent:
         return reward
 
     def chooseAction(self, state):
-        if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
-        else: st = state.reshape((1, *state.shape))
-        pred = self.main(st).numpy()
+        #if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
+        if not isinstance(state, Tensor): state = Tensor(state)
+        pred = self.main(state).numpy()
         action = np.argmax(pred)
         return action, pred
 
@@ -147,15 +145,24 @@ class agent:
         assert le == self.memTypes, f"got experience tuple of length {le}. number of memory categories is set to {self.memTypes}"
         #state, action, reward, nextState, terminal, statePred, nextPred = experience
         state, action, reward, nextState, terminal = experience
-        hot = np.eye(self.actions)[action]
+        
+        ss = state.shape
+        if len(ss) == 4: sh = (ss[1], ss[2], ss[3])
+        else: sh = sh
+        state = state.reshape(sh)
+        nextState = nextState.reshape(sh)
+        if isinstance(state, Tensor): state = state.numpy()
+        if isinstance(nextState, Tensor): nextState = nextState.numpy()
         self.memory[0].append(state)
+        hot = np.eye(self.actions)[int(action)]
         self.memory[1].append(hot)
         self.memory[2].append(reward)
         self.memory[3].append(nextState)
         self.memory[4].append(terminal)
         #self.memory[5].append(statePred)
         #self.memory[6].append(nextPred)
-        if len(self.memory[0]) > self.maxMemory: self.memory.pop(0)
+        if len(self.memory[0]) > self.maxMemory:
+            for i in range(self.memTypes): self.memory[i].pop(0)
 
     def doRandomAction(self):
         return self.doAction(self.randomAction())
@@ -165,15 +172,14 @@ class agent:
     def sampleMemory(self, num, tensor=True):
         assert len(self.memory[1]) > num, f"requested sample size greater than number of recorded experiences"
         samp = np.random.randint(0, len(self.memory[0]), size=(num))
-        memlen = len(self.memory)
-        expSample = [[] for i in range(memlen)]
+        
+        expSample = [[] for i in range(self.memTypes)]
         for s in samp:
             for i, mem in enumerate(expSample):
                 mem.append(self.memory[i][s])
         if tensor:
             for i, mem in enumerate(expSample):
-                t = Tensor(expSample[i])
-                expSample[i] = t
+                expSample[i] = Tensor(expSample[i])
         return tuple(expSample)
 
     def train(self, experience):
