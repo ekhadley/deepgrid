@@ -57,8 +57,9 @@ class grid():
             self.setFood((rx, ry))
         
     def observe(self, tensor=False):
-        if tensor: return Tensor(self.observation).reshape(1, 3, *self.size)
-        return np.array(self.observation, copy=True)
+        sh = (1, 3, self.size[1], self.size[0])
+        if tensor: return Tensor(self.observation).reshape(sh)
+        return np.array(self.observation, copy=True).reshape(sh)
     
     def getTile(self, pos):
         x, y = pos
