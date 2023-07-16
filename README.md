@@ -36,8 +36,8 @@ apparently works for updating weights, but means the actual loss number doesnt r
 This is a pretty common property of RL algorithms.  
 
 The trained net I have included (trained for the default parameters I gave at the top) has played about 45k
-episodes, totalling ~700k frames (most training was done on batch size 8, a bit with 16). Average score of 
-the included model is 32.  
+episodes, totalling ~700k frames (most training was done on batch size 8, a bit with 16). It averages about
+32 points per episode.
 
 I noticed that at the end, doing extra training with a high epsilon was making performance go down. Training
 with low epsilon, I continued to see gains. I think I couldve been much more sample effecient with a better
