@@ -1,8 +1,8 @@
 import numpy as np
 from tinygrad.nn import Tensor
 from tinygrad import nn
-import os
 from utils import *
+from agent import *
 
 class model:
     def __init__(self, gridSize, actions, lr=.001):
@@ -89,7 +89,7 @@ class model:
 ##########################################################################
 
 
-class agent:
+class qAgent(agent):
     def __init__(self, env, stepCost=1, actions=4):
         self.env = env
         self.score = 0
@@ -106,39 +106,12 @@ class agent:
         self.target = model(self.env.size, 4)
         self.update()
 
-    def reset(self):
-        s = self.score
-        self.score = 0
-        self.update()
-        return s
-
-    def doUserAction(self):
-        amap = {"w": 0, "a":1, "s":2, "d":3}
-        cmd = input("select an action [w, a, s, d]:\n")
-        while cmd not in amap:
-            cmd = input(f"{red}not a proper action.{endc} select an action [w, a, s, d]:\n")
-        reward = self.doAction(amap[cmd])
-        print(f"taking action {yellow}{cmd}{endc} gave a reward of {purple}{reward}{endc}. The agent now has a score of {cyan}{self.score}{endc} on step {self.env.stepsTaken}/{self.env.maxSteps}")
-        return reward
-
     def chooseAction(self, state):
         #if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
         if not isinstance(state, Tensor): state = Tensor(state)
         pred = self.main(state).numpy()
         action = np.argmax(pred)
         return action, pred
-
-    def epsRandom(self, epsilon=None):
-        if epsilon is None:
-            epsilon = self.epsilon
-        r = np.random.uniform()
-        #return True means make a random choice
-        return r <= epsilon
-
-    def doAction(self, action):
-        reward = self.env.doAction(action) - self.stepCost
-        self.score += reward
-        return reward
 
     def remember(self, experience):
         le = len(experience)
@@ -163,11 +136,6 @@ class agent:
         #self.memory[6].append(nextPred)
         if len(self.memory[0]) > self.maxMemory:
             for i in range(self.memTypes): self.memory[i].pop(0)
-
-    def doRandomAction(self):
-        return self.doAction(self.randomAction())
-    def randomAction(self):
-        return np.random.randint(0,self.actions)
 
     def sampleMemory(self, num, tensor=True):
         assert len(self.memory[1]) > num, f"requested sample size greater than number of recorded experiences"
