@@ -1,4 +1,5 @@
 import cv2, numpy as np
+from tinygrad.nn import Tensor
 
 purple = '\033[95m'
 blue = '\033[94m'
@@ -20,3 +21,10 @@ def imscale(img, s):
 
 def isint(val):
     return isinstance(val, (int, np.integer))
+
+def sampleDist(probs):
+    assert sum(probs) <= 1, f"distribution probabilities should sum to 1"
+    r = np.random.uniform(0, 1)
+    cum = [sum(probs[0:i+1]) for i in range(len(probs))]
+    for i, c in enumerate(cum):
+        if r < c: return i
