@@ -58,8 +58,8 @@ this value over anumber of episodes.
 But then what's our gradient? Well this estimate of performance makes our objective clear. We want expected
 episode reward to go up: if the sum of all rewards following some action were high, we want the probability
 of taking that action in the future to rise. If the accumulated rewards were negative, we want our prob
-to go down. That is:
-$\huge Loss(state, action_probability, weight)$
+to go down. You can find the derivation of the exact form online but our loss should be given by:
+$\large Loss(state, actionProbability, weight) = -(ln(actionProbability) * weight)$
 . Where in our case weight is chosen to be the cumulative rewards received after the action was taken. Note
 that $\large R(\tau, \alpha)$ is not the only choice that can be made. Several choices, all related to the
 wider concept of the "value" of a particular  set of actions or states, can be chosen. Often the weight
