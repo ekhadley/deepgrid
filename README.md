@@ -38,10 +38,10 @@ useful. This is a pretty common property of RL algorithms.
 The trained net I have included (trained for the default parameters I gave at the top) has played 50k
 episodes, with a batch size of 64, totalling 3.2 million experiences trained on. Its average score is 52.
 This is about the lower limit of human performance, maybe a stupid human, or a child, or a smart monkey.
-But for ~2hrs training, this is solid performance. average score 53 means it on average picks up 7 rewards,
-(Out of 12 on the board) so it's pathing is actually pretty effecient. I had some nice score gains for doing
-extra training with low epsilon (0.05-0.01) after the main training run. Training with higher epsilon at this
-point actually started hurting my performance. Probably an estimation bias going on that causes this.
+But for ~2hrs training, this is aint bad. average score 53 means it on average picks up 7 rewards, (Out
+of 12 on the board) so it's pathing is actually pretty effecient. I had some nice score gains for doing
+extra training with low epsilon (0.05-0.01) after the main training run. Training with higher epsilon at
+this point actually started hurting my performance. Probably an estimation bias going on that causes this.
 
 ## Simple Policy Optimization
 
