@@ -13,48 +13,49 @@ print(f"{yellow}{getenv('CUDA')=}{endc}")
 print(f"{yellow}{getenv('JIT')=}{endc}")
 print(f"{red}{a.main.lin1.weight.device=}{endc}")
 
-startVersion = 0
-#loadDir = f"D:\\wgmn\\deepgrid\\netx\\{startVersion}"
-loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
+startVersion = 43500
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\{startVersion}"
+#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
 a.load(loadDir)
 
 saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
 Tensor.training = True
 epscores, losses = [], []
-a.epsilon = .05
-a.decayRate = 0.99999
+a.epsilon = 0.05
+a.decayRate = 0.99995
 a.maxMemmory = 10_000
-saveEvery = 100
-sampleSize = 8
-trainingStart = 2*sampleSize
+saveEvery = 500
+switchEvery = 5
+batchSize = 64
+trainingStart = 2*batchSize//g.maxSteps
 numEpisodes = 100_000
-for i in (t:=trange(numEpisodes, ncols=100, desc=blue, unit="ep")):
+for i in (t:=trange(numEpisodes, ncols=110, unit="ep")):
     ep = i + startVersion
     while not g.terminate:
         state = g.observe()
-        if a.epsRandom():
+        if a.epsRandom() or i < trainingStart:
             action = a.randomAction()
         else:
             action, pred = a.chooseAction(state)
+            if np.isnan(pred).any():
+                rb = saveEvery*(ep//saveEvery)
+                print(f"\n{red}nan'd out on {ep}. rolling back to version {rb}{endc}")
+                a.load(f"{saveDir}\\{rb}")
+
         reward = a.doAction(action)
         a.epsilon *= a.decayRate
         
         exp = (state, action, reward, g.observe(tensor=False), 1*g.terminate)
         a.remember(exp)
 
-        if i >= trainingStart:
-            experience = a.sampleMemory(sampleSize)
-            out, loss = a.train(experience)
-            if np.isnan(loss.numpy()).any():
-                rb = saveEvery*(ep//saveEvery)
-                print(f"\n{red}nan'd out on {ep}. rolling back to version {rb}{endc}")
-                a.load(f"{saveDir}\\{rb}")
-
-    #print(g)
     g.reset()
     epscore = a.reset()
     epscores.append(epscore)
     if i >= trainingStart:
+        experience = a.sampleMemory(batchSize)
+        out, loss = a.train(experience)
+        if i%switchEvery==0: a.update()
+        
         recents = np.mean(epscores[-10:-1])
         desc = f"{purple}recent scores: {recents:.2f}, {cyan}{a.epsilon=:.4f}, {red}loss={loss.numpy()}{blue}"
         t.set_description(desc)
