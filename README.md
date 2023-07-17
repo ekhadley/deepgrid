@@ -50,14 +50,10 @@ which maps states to probabilities of taking each possible action. But to do wei
 we need to find the gradient of performance with respect to the weights of the net. But how do we find
 what direction to step to increase performance, when it is our environment (which is rarely a differentiable
 function), that tells us how well we would score using some policy? The answer is to estimate the performance
-gradient through an expected value of reward over a number of episodes. The expected reward of a single step
-is 
+gradient through an expected value of reward over a number of episodes. The expected reward for an episode is 
 $\large EV = P(\alpha|\tau)R(\tau, \alpha) $
-, the probability of taking the action you took, times the reward you received. The expected reward of a policy
-over an entire episode is just the sum of the expected reward on each step. So we can create a stronger estimate
-by averaging the expected reward over several episodes.
-
-
+, the probability of choosing the sequence of actions you chose, times the sum of all rewards received after
+taking that action during that episode.
 
 
 
