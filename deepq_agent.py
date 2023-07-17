@@ -1,7 +1,6 @@
 import numpy as np
 from tinygrad.nn import Tensor
 from tinygrad import nn
-import time
 from utils import *
 from agent import *
 
@@ -139,7 +138,7 @@ class qAgent(agent):
             for i in range(self.memTypes): self.memory[i].pop(0)
 
     def sampleMemory(self, num, tensor=True):
-        assert len(self.memory[1]) > num, f"requested sample size greater than number of recorded experiences"
+        assert len(self.memory[1]) > num, "requested sample size greater than number of recorded experiences"
         samp = np.random.randint(0, len(self.memory[0]), size=(num))
         
         expSample = [[] for i in range(self.memTypes)]
@@ -161,6 +160,11 @@ class qAgent(agent):
         self.target.load(path)
         self.update()
 
+    def reset(self):
+        s = self.score
+        self.score = 0
+        #self.update()
+        return s
 
 
 

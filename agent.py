@@ -8,12 +8,6 @@ class agent:
         print(red, "dont initialize agent, use a specific subtype", endc)
         raise NotImplementedError
 
-    def reset(self):
-        s = self.score
-        self.score = 0
-        self.update()
-        return s
-
     def doUserAction(self):
         amap = {"w": 0, "a":1, "s":2, "d":3}
         cmd = input("select an action [w, a, s, d]:\n")
