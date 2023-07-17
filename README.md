@@ -44,4 +44,32 @@ extra training with low epsilon (0.05-0.01) after the main training run. Trainin
 this point actually started hurting my performance. Probably an estimation bias going on that causes this.
 
 ## Simple Policy Optimization
+Policy Optimization is the basis of many more capable agents in more complex environments. Instead of
+choosing actions greedily based on a value function, we represent the policy explicitly, as a neural net
+which maps states to probabilities of taking each possible action. But to do weight updates on a policy,
+we need to find the gradient of performance with respect to the weights of the net. But how do we find
+what direction to step to increase performance, when it is our environment (which is rarely a differentiable
+function), that tells us how well we would score using some policy? The answer is to estimate the performance
+gradient through an expected value of reward over a number of episodes. The expected reward of a single step
+is 
+$\large EV = P(\alpha|\tau)R(\tau, \alpha) $
+, the probability of taking the action you took, times the reward you received. The expected reward of a policy
+over an entire episode is just the sum of the expected reward on each step. So we can create a stronger estimate
+by averaging the expected reward over several episodes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
