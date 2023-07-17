@@ -14,8 +14,8 @@ print(f"{yellow}{getenv('JIT')=}{endc}")
 print(f"{red}{a.main.lin1.weight.device=}{endc}")
 
 startVersion = 43500
-loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\{startVersion}"
-#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
+#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\{startVersion}"
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
 a.load(loadDir)
 
 saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
