@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 g = grid((8, 5), numFood=12, numBomb=12)
 a = qAgent(g)
 
-startVersion = 0
-loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
-#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\{startVersion}"
+startVersion = 50_000
+#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net"
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\{startVersion}"
 a.load(loadDir)
 
 Tensor.training = False
