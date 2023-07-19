@@ -1,6 +1,4 @@
 import numpy as np
-from tinygrad.nn import Tensor
-from tinygrad import nn
 from utils import *
 
 class agent:

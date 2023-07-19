@@ -1,6 +1,7 @@
-import cv2, numpy as np
-from tinygrad.nn import Tensor
-from tinygrad.nn import optim
+import  numpy as np
+import torch
+from torch import nn
+import torch.functional as F
 from utils import *
 
 
@@ -55,17 +56,17 @@ class grid():
             while not self.isEmpty((rx, ry)) or (rx, ry)==self.agentPos:
                 rx, ry = np.random.randint(0, width), np.random.randint(0, height)
             self.setFood((rx, ry))
-        
+
     def observe(self, tensor=False):
-        sh = (1, 3, self.size[1], self.size[0])
-        if tensor: return Tensor(self.observation).reshape(sh)
+        sh = (3, self.size[1], self.size[0])
+        if tensor: return torch.from_numpy(self.observation).reshape(sh)
         return np.array(self.observation, copy=True).reshape(sh)
-    
+
     def getTile(self, pos):
         x, y = pos
         #assert isint(x) and isint(y), f"non-int type in coordinates: ({pos})"
         return self.tiles[y][x]
-    
+
     def doAction(self, action):
         # actions are 0,1,2,3. They mean move one square up,left,down,right respectively
         ax, ay = self.agentPos

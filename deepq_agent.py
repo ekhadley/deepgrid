@@ -1,11 +1,14 @@
 import numpy as np
-from tinygrad.nn import Tensor
-from tinygrad import nn
+import torch
+from torch import nn
+import torch.nn.functional as F
 from utils import *
 from agent import *
+import os, time
 
-class model:
+class model(nn.Module):
     def __init__(self, gridSize, actions, lr=.001):
+        super(model, self).__init__()
         self.gridSize, self.actions, self.lr = gridSize, actions, lr
         width, height = gridSize
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1)
@@ -13,25 +16,24 @@ class model:
         self.lin1 = nn.Linear(32*height*width, 512)
         self.lin2 = nn.Linear(512, 64)
         self.lin3 = nn.Linear(64, self.actions)
-        self.layers = [self.conv1, self.conv2, self.lin1, self.lin2, self.lin3]
-        self.names = ["conv1", "conv2", "lin1", "lin2", "lin3"]
 
         #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
-        self.opt = nn.optim.AdamW([layer.weight for layer in self.layers], lr=self.lr)
+        self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr)
 
-    def forward(self, X: Tensor):
+    def forward(self, X):
         sh = X.shape
-        assert len(sh)==4, f"got input tensor shape {sh}. Should be length 4: (batch, channels, width, height)"
-        X = self.conv1(X).leakyrelu()
-        X = self.conv2(X).leakyrelu()
-        X = X.reshape(sh[0], -1)
-        X = self.lin1(X).relu()
-        X = self.lin2(X).relu()
+        #assert len(sh)==4, f"got input tensor shape {sh}. Should be length 4: (batch, channels, width, height)"
+        if len(sh) == 3: X = X.reshape(1, *sh)
+        X = F.relu(self.conv1(X))
+        X = F.leaky_relu(self.conv2(X))
+        X = X.reshape(X.shape[0], -1)
+        X = F.relu(self.lin1(X))
+        X = F.relu(self.lin2(X))
         X = self.lin3(X)
         return X
     def __call__(self, X): return self.forward(X)
 
-    def loss(self, experience, out:Tensor, discount=1, debug=False):
+    def loss(self, experience, out, discount=1, debug=False):
         states, actions, rewards, nstates, terminal = experience
         #states, actions, rewards, nstates, terminal, statePred, nextPred_ = experience
         #if np.isnan(nextPred_.numpy()).any():
@@ -39,22 +41,22 @@ class model:
         #else:
         #    nextpred = nextPred_.reshape(states.shape[0], -1)
         nextpred = self.forward(nstates)
-        tmask = 1 - terminal
-        trueQ = rewards + discount*tmask*(nextpred.max(axis=1))
+        tmask = (1 - terminal)*discount
+        trueQ = rewards + (nextpred.max(axis=1).values)*tmask
         predQ = (out*actions).sum(axis=1)
         diff = predQ - trueQ
         loss = diff.pow(2).sum()
         
         if debug:
-            print(f"{blue}{tmask.numpy()=}{endc}")
-            print(f"{blue}{out.shape=}{endc}")
-            print(f"{underline}{rewards.numpy()=}{endc}")
-            print(f"{red}{nextpred.numpy()=}{endc}")
-            print(f"{red}{nextpred.max(axis=1).numpy()=}{endc}")
-            print(f"{green}{trueQ.numpy()=}{endc}")
-            print(f"{yellow}{predQ.numpy()=}{endc}")
-            print(f"{purple}{diff.numpy()=}{endc}")
-            print(f"{bold}{loss.numpy()=}{endc}\n")
+            print(f"{red}{states.shape=}{endc}")
+            print(f"{green}{out.shape=}{endc}")
+            print(f"{bold}{rewards.detach()=}{endc}")
+            print(f"{red}{nextpred.detach()=}{endc}")
+            print(f"{blue}{tmask.detach()=}{endc}")
+            print(f"{green}{trueQ.detach()=}{endc}")
+            print(f"{yellow}{predQ.detach()=}{endc}")
+            print(f"{purple}{diff.detach()=}{endc}")
+            print(f"{bold}{loss.detach()=}{endc}\n")
         return loss
 
     def train(self, experience, discount=1.0):
@@ -72,18 +74,17 @@ class model:
         return out, los
 
     def copy(self, other):
-        for i, layer in enumerate(self.layers):
-            layer.weight.assign(other.layers[i].weight.detach())
+        otherparams = [e for e in other.parameters()]
+        with torch.no_grad():
+            for i, layer in enumerate(self.parameters()):
+                layer.copy_(otherparams[i].detach().clone())
 
-    def save(self, path):
-        for i, name in enumerate(self.names):
-            np.save(f"{path}\\{name}.npy", self.layers[i].weight.numpy())
+    def save(self, path, name):
+        os.makedirs(path, exist_ok=True)
+        torch.save(self.state_dict(), f"{path}\\{name}.pth")
 
     def load(self, path):
-        for name in self.names:
-            s = np.load(f"{path}\\{name}.npy")
-            layer = self.__getattribute__(name)
-            layer.weight.assign(s)
+        self.load_state_dict(torch.load(path))
 
 
 ##########################################################################
@@ -108,24 +109,17 @@ class qAgent(agent):
 
     def chooseAction(self, state):
         #if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
-        if not isinstance(state, Tensor): state = Tensor(state)
-        pred = self.main(state).numpy()
+        if isinstance(state, np.ndarray): state = torch.from_numpy(state)
+        pred = self.main(state).detach().numpy()
         action = np.argmax(pred)
         return action, pred
 
     def remember(self, experience):
-        le = len(experience)
-        assert le == self.memTypes, f"got experience tuple of length {le}. number of memory categories is set to {self.memTypes}"
         #state, action, reward, nextState, terminal, statePred, nextPred = experience
         state, action, reward, nextState, terminal = experience
         
-        ss = state.shape
-        if len(ss) == 4: sh = (ss[1], ss[2], ss[3])
-        else: sh = sh
-        state = state.reshape(sh)
-        nextState = nextState.reshape(sh)
-        if isinstance(state, Tensor): state = state.numpy()
-        if isinstance(nextState, Tensor): nextState = nextState.numpy()
+        if torch.is_tensor(state): state = state.numpy()
+        if torch.is_tensor(nextState): nextState = nextState.numpy()
         self.memory[0].append(state)
         hot = np.eye(self.actions)[int(action)]
         self.memory[1].append(hot)
@@ -147,17 +141,18 @@ class qAgent(agent):
                 mem.append(self.memory[i][s])
         if tensor:
             for i, mem in enumerate(expSample):
-                expSample[i] = Tensor(expSample[i])
+                expSample[i] = torch.tensor(expSample[i])
         return tuple(expSample)
 
     def train(self, experience):
         return self.target.train(experience, discount=self.gamma)
     def update(self):
         self.main.copy(self.target)
-    def save(self, path):
-        self.target.save(path)
+    def save(self, path, name):
+        self.target.save(path, name)
     def load(self, path):
-        self.target.load(path)
+        sd = torch.load(path)
+        self.target.load_state_dict(sd)
         self.update()
 
     def reset(self):
