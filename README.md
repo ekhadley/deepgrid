@@ -2,7 +2,7 @@
 This is my implementation of a few different deep RL algorithms, all applied to a simple custom
 environment. It is a small grid in which you have an agent (@), what I have termed food (o),
 giving a reward, and bombs (x), giving negative reward. Default parameters are: 8x5 grid, 16
-steps/ep, -1 step cost, +-10 for food/bomb, 12 of each, running into a wall does nothing, random
+steps/ep, 0 step cost, +-10 for food/bomb, 12 of each, running into a wall does nothing, random
 starting position every ep. Example starting state:
 <pre>
 ##########################
@@ -17,9 +17,9 @@ The main goal of agents in this environment is to learn how to choose paths whic
 number of rewards per step. Because the default number of steps is only 16, you can only really choose
 a portion of the grid to totally exploit before you get reset. Smart agents take effecient paths, 
 choosing to exploit the most food-rich regions of the grid. Really smart agents even learn to do things
-like tanking a bomb in order to get access to two or more rewards.  
-The ekhadley (human) lower limit is about 50 points per episode, including the default step cost of -1.  
-Below I'll go over the basics of each method implemented, and the performance after training.
+like tanking a bomb in order to get access to two or more rewards. The ekhadley (human) average is about
+70-80 points per episode. Below I'll go over the basics of each method implemented, and the performance
+after training.
 
 ## Deep Q Learner.
 Deep Q is the simplest drl method to implement so it seemed like a good starting point. The goal of deep
@@ -37,9 +37,7 @@ useful. This is a pretty common property of RL algorithms.
 
 The trained net I have included (trained for the default parameters I gave at the top) has played 100k
 episodes, with a batch size of 64, totalling 6.4 million states seen in training. Its average score is
-60. This is about the average human performance, maybe a stupid human, or a child, or a smart
-monkey. Average score 60 means it on average picks up almost 8 rewards, (Out of 12 on the board) so it's
-pathing is actually pretty effecient. I had some nice score gains for doing extra training with low epsilon
+71: about human level performance. I had some nice score gains for doing extra training with low epsilon
 (0.05-0.01) after the main training run. Training with higher epsilon at this point actually started
 hurting my performance. Probably an estimation bias going on that causes this.
 
