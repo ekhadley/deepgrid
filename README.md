@@ -35,13 +35,13 @@ teach the net to estimate all future rewards by only labelling the reward we got
 apparently works for updating weights, but means the actual loss number doesnt really measure anything
 useful. This is a pretty common property of RL algorithms.  
 
-The trained net I have included (trained for the default parameters I gave at the top) has played 50k
-episodes, with a batch size of 64, totalling 3.2 million experiences trained on. Its average score is 52.
-This is about the lower limit of human performance, maybe a stupid human, or a child, or a smart monkey.
-But for ~2hrs training, this is aint bad. average score 53 means it on average picks up 7 rewards, (Out
-of 12 on the board) so it's pathing is actually pretty effecient. I had some nice score gains for doing
-extra training with low epsilon (0.05-0.01) after the main training run. Training with higher epsilon at
-this point actually started hurting my performance. Probably an estimation bias going on that causes this.
+The trained net I have included (trained for the default parameters I gave at the top) has played 100k
+episodes, with a batch size of 64, totalling 6.4k million states seen in training. Its average score is
+60. This is about the average human performance, maybe a stupid human, or a child, or a smart
+monkey. Average score 60 means it on average picks up almost 8 rewards, (Out of 12 on the board) so it's
+pathing is actually pretty effecient. I had some nice score gains for doing extra training with low epsilon
+(0.05-0.01) after the main training run. Training with higher epsilon at this point actually started
+hurting my performance. Probably an estimation bias going on that causes this.
 
 ## Simple Policy Optimization
 Policy Optimization is the basis of many more capable agents in more complex environments. Instead of
@@ -52,7 +52,7 @@ what direction to step to increase performance, when it is our environment (whic
 function), that tells us how well we would score using some policy? The answer is to estimate the performance
 gradient through an expected value of reward over a number of episodes. The expected reward for an episode is 
 $\large EV = \pi(\alpha|\tau)R(\tau) $
-, the probability of choosing the sequence of actions you chose (under policy $\pi$, times the sum of all
+, the probability of choosing the sequence of actions you chose (under policy $\pi$), times the sum of all
 rewards received after taking that action during that episode. We can strengthen our estimate by averaging
 this value over anumber of episodes.  
 But then what's our gradient? Well this estimate of performance makes our objective clear. We want expected
