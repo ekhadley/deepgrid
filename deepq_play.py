@@ -23,8 +23,7 @@ for i in (t:=trange(1000, ncols=100, desc=purple, unit="ep")):
     while not g.terminate:
         state = g.observe()
         action, pred = a.chooseAction(state)
-        #reward = a.doAction(action)
-        reward = a.doUserAction()
+        reward = a.doAction(action)
         
         #print(f"taking action {yellow}{action}{endc} gave a reward of {purple}{reward:.2f}{endc}. The agent now has a score of {cyan}{a.score:.2f}{endc} on step {g.stepsTaken}/{g.maxSteps}")
         #print(f"{green}{pred=}{endc}")
