@@ -13,7 +13,8 @@ bold = '\033[1m'
 underline = '\033[4m'
 
 def sampleDist(probs, returnProb=False):
-    assert round(sum(probs), 3) <= 1, f"distribution probabilities should sum to ~1"
+    summ = sum(probs)
+    assert round(summ, 3) <= 1, f"distribution probabilities should sum to ~1. sum is {summ}"
     r = np.random.uniform(0, 1)
     cum = [sum(probs[0:i+1]) for i in range(len(probs))]
     for i, c in enumerate(cum):

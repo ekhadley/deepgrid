@@ -1,21 +1,20 @@
 from tqdm import trange
 from utils import *
-from deepq_agent import *
+from spo_agent import *
 from env import *
 import matplotlib.pyplot as plt
 
 torch.device("cuda")
-torch.inference_mode(True)
 
 g = grid((8, 5), numFood=12, numBomb=12)
-a = qAgent(g)
+a = spoAgent(g)
 
-startVersion = 100000
-#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
-loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
+startVersion = 0
+#loadDir = f"D:\\wgmn\\deepgrid\\spo_net\\net_{startVersion}.pth"
+loadDir = f"D:\\wgmn\\deepgrid\\spo_100k.pth"
 a.load(loadDir)
 
-show = False
+show = True
 prnt = False
 a.epsilon = 0
 epscores = []
@@ -23,7 +22,7 @@ epscores = []
 for i in (t:=trange(1000, ncols=100, desc=purple, unit="ep")):
     while not g.terminate:
         state = g.observe()
-        action, pred = a.chooseAction(state)
+        action, dist = a.chooseAction(state)
         reward = a.doAction(action)
         
         #print(f"taking action {yellow}{action}{endc} gave a reward of {purple}{reward:.2f}{endc}. The agent now has a score of {cyan}{a.score:.2f}{endc} on step {g.stepsTaken}/{g.maxSteps}")
