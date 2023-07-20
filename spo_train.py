@@ -17,7 +17,7 @@ startVersion = 0
 
 saveDir = f"D:\\wgmn\\deepgrid\\spo_net_new"
 epscores, losses = [], []
-saveEvery = 1000
+saveEvery = 5000
 trainEvery = 10
 numEpisodes = 1_000_000
 for i in (t:=trange(numEpisodes, ncols=110, unit="ep")):

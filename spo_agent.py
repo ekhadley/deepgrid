@@ -76,7 +76,7 @@ class spoAgent(agent):
         self.actions = [[]]
         self.rewards = [[]]
 
-    def chooseAction(self, state, greedy = False):
+    def chooseAction(self, state, greedy=False):
         #if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
         if isinstance(state, np.ndarray): state = torch.from_numpy(state)
         dist = torch.flatten(self.policy(state))
