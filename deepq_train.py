@@ -11,17 +11,17 @@ torch.device("cuda")
 g = grid((8, 5), numFood=12, numBomb=12)
 a = qAgent(g)
 
-startVersion = 60000
+startVersion = 70000
 loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
 a.load(loadDir)
 
 saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
 #saveDir = f"deepq_net_new"
 epscores, losses = [], []
-a.epsilon = .05
-a.decayRate = 0.999992
+a.epsilon = 0.05
+a.decayRate = 0.99999
 a.maxMemmory = 10_000
-saveEvery = 1000
+saveEvery = 5000
 switchEvery = 5
 batchSize = 64
 trainingStart = 2*batchSize//g.maxSteps

@@ -11,8 +11,8 @@ g = grid((8, 5), numFood=12, numBomb=12)
 a = qAgent(g)
 
 startVersion = 100000
-#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
-loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
+#loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
 a.load(loadDir)
 
 show = False

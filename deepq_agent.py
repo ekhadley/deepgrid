@@ -35,11 +35,7 @@ class model(nn.Module):
 
     def loss(self, experience, out, discount=1, debug=False):
         states, actions, rewards, nstates, terminal = experience
-        #states, actions, rewards, nstates, terminal, statePred, nextPred_ = experience
-        #if np.isnan(nextPred_.numpy()).any():
-        #    nextpred = self.forward(nstates)
-        #else:
-        #    nextpred = nextPred_.reshape(states.shape[0], -1)
+
         nextpred = self.forward(nstates)
         tmask = (1 - terminal)*discount
         trueQ = rewards + (nextpred.max(axis=1).values)*tmask
@@ -61,11 +57,7 @@ class model(nn.Module):
 
     def train(self, experience, discount=1.0):
         states, actions, rewards, nstates, terminals = experience
-        #states, actions, rewards, nstates, terminals, statePred, nextPred = experience
-        #if np.isnan(statePred[0].numpy()).any():
-        #    out = self.forward(states)
-        #else:
-        #    out = statePred.reshape(states.shape[0], -1)
+
         out = self.forward(states)
         los = self.loss(experience, out, discount=discount)
         self.opt.zero_grad()
@@ -91,7 +83,7 @@ class model(nn.Module):
 
 
 class qAgent(agent):
-    def __init__(self, env, stepCost=1, actions=4):
+    def __init__(self, env, stepCost=0, actions=4):
         self.env = env
         self.score = 0
         self.gamma = 1
@@ -126,8 +118,6 @@ class qAgent(agent):
         self.memory[2].append(reward)
         self.memory[3].append(nextState)
         self.memory[4].append(terminal)
-        #self.memory[5].append(statePred)
-        #self.memory[6].append(nextPred)
         if len(self.memory[0]) > self.maxMemory:
             for i in range(self.memTypes): self.memory[i].pop(0)
 
