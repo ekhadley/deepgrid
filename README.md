@@ -36,7 +36,7 @@ apparently works for updating weights, but means the actual loss number doesnt r
 useful. This is a pretty common property of RL algorithms.  
 
 The trained net I have included (trained for the default parameters I gave at the top) has played 100k
-episodes, with a batch size of 64, totalling 6.4k million states seen in training. Its average score is
+episodes, with a batch size of 64, totalling 6.4 million states seen in training. Its average score is
 60. This is about the average human performance, maybe a stupid human, or a child, or a smart
 monkey. Average score 60 means it on average picks up almost 8 rewards, (Out of 12 on the board) so it's
 pathing is actually pretty effecient. I had some nice score gains for doing extra training with low epsilon
