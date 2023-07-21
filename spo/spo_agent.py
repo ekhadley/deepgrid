@@ -1,9 +1,10 @@
-import numpy as np
 import torch
-from torch import nn
+import torch.nn as nn
 import torch.nn.functional as F
-from utils import *
-from agent import *
+import numpy as np
+from tqdm import trange
+import deepgrid as dg
+from deepgrid.colors import *
 import os, time
 
 class model(nn.Module):
@@ -65,7 +66,7 @@ class model(nn.Module):
 ##########################################################################
 
 
-class spoAgent(agent):
+class spoAgent(dg.agent):
     def __init__(self, env, stepCost=0, actions=4):
         self.env = env
         self.score = 0
@@ -80,8 +81,8 @@ class spoAgent(agent):
         #if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
         if isinstance(state, np.ndarray): state = torch.from_numpy(state)
         dist = torch.flatten(self.policy(state))
-        if greedy: np.argmax(dist.detach().numpy())
-        else: action = sampleDist(dist.detach().numpy())
+        if greedy: action = np.argmax(dist.detach().numpy())
+        else: action = dg.sampleDist(dist.detach().numpy())
         return action, dist
 
     def remember(self, state, action, reward):
@@ -92,9 +93,9 @@ class spoAgent(agent):
 
     def train(self):
         sh = (3, self.env.size[1], self.env.size[0])
-        states = torch.Tensor(self.states).reshape(-1, *sh)
-        actions = torch.Tensor(self.actions)
-        rewards = torch.Tensor(self.rewards)
+        states = torch.Tensor(np.float32(self.states)).reshape(-1, *sh)
+        actions = torch.Tensor(np.float32(self.actions))
+        rewards = torch.Tensor(np.float32(self.rewards))
         return self.policy.train(states, actions, rewards)
 
     def save(self, path, name):

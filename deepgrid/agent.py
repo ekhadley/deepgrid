@@ -1,5 +1,5 @@
 import numpy as np
-from utils import *
+from .colors import *
 
 class agent:
     def __init__(self, *args, **kwargs):

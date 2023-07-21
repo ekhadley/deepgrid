@@ -1,9 +1,10 @@
-import numpy as np
 import torch
-from torch import nn
+import torch.nn as nn
 import torch.nn.functional as F
-from utils import *
-from agent import *
+import numpy as np
+from tqdm import trange
+import deepgrid as dg
+from deepgrid.colors import *
 import os, time
 
 class model(nn.Module):
@@ -78,11 +79,9 @@ class model(nn.Module):
     def load(self, path):
         self.load_state_dict(torch.load(path))
 
-
 ##########################################################################
 
-
-class qAgent(agent):
+class qAgent(dg.agent):
     def __init__(self, env, stepCost=0, actions=4):
         self.env = env
         self.score = 0
@@ -131,7 +130,7 @@ class qAgent(agent):
                 mem.append(self.memory[i][s])
         if tensor:
             for i, mem in enumerate(expSample):
-                expSample[i] = torch.tensor(expSample[i])
+                expSample[i] = torch.tensor(np.float32(expSample[i]))
         return tuple(expSample)
 
     def train(self, experience):

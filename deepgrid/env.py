@@ -1,9 +1,6 @@
-import  numpy as np
+import cv2, numpy as np
+from deepgrid.colors import *
 import torch
-from torch import nn
-import torch.functional as F
-from utils import *
-
 
 class grid():
     def __init__(self, size, startPos=None, numBomb=2, numFood=2, windowWidth=1000, maxSteps=16, foodReward=10, bombReward=-10):
