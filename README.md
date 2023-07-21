@@ -61,7 +61,10 @@ $\large Loss(state, actionProbability, weight) = -ln(actionProbability)*weight$
 . Where in our case weight is chosen to be the cumulative rewards received after the action was taken. Note
 that $\large R(\tau, \alpha)$ is not the only choice that can be made. Several choices, all related to the
 wider concept of the "value" of a particular  set of actions or states, can be chosen. Often the weight
-is chosen to be $Q(s)$ or $V(s)$, approximated with a neural net and learned along side the policy.
+is chosen to be $Q(s)$ or $V(s)$, approximated with a neural net and learned along side the policy.  
+
+The net included has played 100k episodes in training, updating the weights every 10 episodes. It also
+acheives an average score of about 70.
 
 
 
