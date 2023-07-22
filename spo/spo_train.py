@@ -6,9 +6,6 @@ from tqdm import trange
 from deepgrid.colors import *
 import deepgrid as dg
 from .spo_agent import spoAgent
-#from cProfile import Profile
-#prof = Profile()
-#prof.enable()
 
 def train(show=False):
     torch.device("cuda")
@@ -54,6 +51,3 @@ def train(show=False):
         g.reset()
         epscore = a.reset()
         epscores.append(epscore)
-
-#prof.disable()
-#prof.dump_stats("D:\\wgmn\\tmp")

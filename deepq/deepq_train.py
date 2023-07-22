@@ -2,9 +2,7 @@ from tqdm import trange
 from deepgrid.utils import *
 from deepgrid.env import *
 from .deepq_agent import *
-#from cProfile import Profile
-#prof = Profile()
-#prof.enable()
+
 
 def train(show=False):
     torch.device("cuda")
@@ -64,5 +62,3 @@ def train(show=False):
                 a.save(saveDir, name)
 
 
-#prof.disable()
-#prof.dump_stats("D:\\wgmn\\tmp")
