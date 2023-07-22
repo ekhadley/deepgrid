@@ -41,7 +41,7 @@ episodes, with a batch size of 64, totalling 6.4 million states seen in training
 (0.05-0.01) after the main training run. Training with higher epsilon at this point actually started
 hurting my performance. Probably an estimation bias going on that causes this.
 
-## Simple Policy Optimization
+## Vanilla Policy Optimization.
 Policy Optimization is the basis of many more capable agents in more complex environments. Instead of
 choosing actions greedily based on a value function, we represent the policy explicitly, as a neural net
 which maps states to probabilities of taking each possible action. But to do weight updates on a policy,
@@ -62,6 +62,10 @@ $\large Loss(state, actionProbability, weight) = -ln(actionProbability)*weight$
 that $\large R(\tau, \alpha)$ is not the only choice that can be made. Several choices, all related to the
 wider concept of the "value" of a particular  set of actions or states, can be chosen. Often the weight
 is chosen to be $Q(s)$ or $V(s)$, approximated with a neural net and learned along side the policy.  
+
+In the files, vanilla and vpg refer to vanilla policy optimization. rtg_train refers to the fact that the
+"weight" of each action in the loss function is the so-called "reward-to-go": the sum of all rewards
+received `after` taking an action, during that episode.
 
 The net included has played 100k episodes in training, updating the weights every 10 episodes. It also
 acheives an average score of about 70.
