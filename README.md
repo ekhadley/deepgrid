@@ -49,7 +49,7 @@ we need to find the gradient of performance with respect to the weights of the n
 what direction to step to increase performance, when it is our environment (which is rarely a differentiable
 function), that tells us how well we would score using some policy? The answer is to estimate the performance
 gradient through an expected value of reward over a number of episodes. The expected reward for an episode is 
-$\large EV = \pi(\alpha|\tau)R(\tau) $
+$\large EV = \pi(\alpha|\tau)R(\tau)$
 , the probability of choosing the sequence of actions you chose (under policy $\pi$), times the sum of all
 rewards received after taking that action during that episode. We can strengthen our estimate by averaging
 this value over anumber of episodes.  
@@ -58,10 +58,8 @@ episode reward to go up: if the sum of all rewards following some action were hi
 of taking that action in the future to rise. If the accumulated rewards were negative, we want our prob
 to go down. You can find the derivation of the exact form online but our loss should be given by:
 $\large Loss(state, actionProbability, weight) = -ln(actionProbability)*weight$
-. Where in our case weight is chosen to be the cumulative rewards received after the action was taken. Note
-that $\large R(\tau, \alpha)$ is not the only choice that can be made. Several choices, all related to the
-wider concept of the "value" of a particular  set of actions or states, can be chosen. Often the weight
-is chosen to be $Q(s)$ or $V(s)$, approximated with a neural net and learned along side the policy.  
+. Note that $\large R(\tau, \alpha)$ is not the only choice that can be made. Several choices, all related to
+the wider concept of the "value" of a particular  set of actions or states, can be chosen. 
 
 In the files, vanilla and vpg refer to vanilla policy optimization. rtg_train refers to the fact that the
 "weight" of each action in the loss function is the so-called "reward-to-go": the sum of all rewards
