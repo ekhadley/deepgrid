@@ -2,7 +2,7 @@ import sys, argparse, os
 from deepgrid.colors import *
 import deepgrid as dg
 import deepq
-import spo
+import vanilla
 
 p = argparse.ArgumentParser()
 
@@ -12,8 +12,7 @@ p.add_argument("--show", help="display picture of agent as it plays (v slow)",  
 p.add_argument("--profile", help="profile the code, save in same dir as this",  action="store_true")
 
 args = p.parse_args()
-#print(cyan, args, endc)
-#print(green, args.mode, endc)
+print(cyan, args, endc)
 
 if args.profile:
     from cProfile import Profile
@@ -28,9 +27,9 @@ if __name__ == "__main__":
             main = deepq.deepq_train.train
     elif args.algo == "spo":
         if args.mode == "play":
-            main = spo.spo_play.play
+            main = vanilla.vpg_play.play
         elif args.mode == "train":
-            main = spo.spo_train.train
+            main = vanilla.rtg_train.train
     main(show=args.show)
 
 if args.profile:

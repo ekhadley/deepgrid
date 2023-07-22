@@ -2,9 +2,7 @@ import numpy as np
 from .colors import *
 
 class agent:
-    def __init__(self, *args, **kwargs):
-        print(red, "dont initialize agent, use a specific subtype", endc)
-        raise NotImplementedError
+    def __init__(self, *args, **kwargs): raise NotImplementedError
 
     def doUserAction(self):
         amap = {"w": 0, "a":1, "s":2, "d":3}
