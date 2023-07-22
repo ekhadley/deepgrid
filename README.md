@@ -65,7 +65,7 @@ is chosen to be $Q(s)$ or $V(s)$, approximated with a neural net and learned alo
 
 In the files, vanilla and vpg refer to vanilla policy optimization. rtg_train refers to the fact that the
 "weight" of each action in the loss function is the so-called "reward-to-go": the sum of all rewards
-received `after` taking an action, during that episode.
+received *after* taking an action, during that episode.
 
 The net included has played 100k episodes in training, updating the weights every 10 episodes. It also
 acheives an average score of about 70.
