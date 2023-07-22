@@ -15,7 +15,7 @@ def play(show=False):
     a = vpgAgent(g)
     
     startVersion = 0
-    #loadDir = f"D:\\wgmn\\deepgrid\\vanilla\\rtg_net\\net_{startVersion}.pth"
+    #loadDir = f"D:\\wgmn\\deepgrid\\vanilla\\rtg_net_new\\net_{startVersion}.pth"
     loadDir = f"D:\\wgmn\\deepgrid\\vanilla\\rtg_100k.pth"
     a.load(loadDir)
     

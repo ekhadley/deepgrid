@@ -31,8 +31,8 @@ def train(show=False):
             reward = a.doAction(action)
             
             hot = np.eye(a.numActions)[action]
-            states.apppend(state)
-            rtg = [e + reward for e in rtg[-1]] # first accumulating rewards to get the reward-to-go
+            states.append(state)
+            rtg = [e + reward for e in rtg] # first accumulating rewards to get the reward-to-go
             rtg.append(reward) # then adding the reward for the current step
             actions.append(hot)
 
@@ -41,7 +41,10 @@ def train(show=False):
                 cv2.imshow("grid", im)
                 cv2.waitkey(50)
 
-        a.remember(states, rtg, actions)
+        a.remember(states, actions, rtg)
+        g.reset()
+        epscore = a.reset()
+        epscores.append(epscore)
         if i != 0 and i%trainEvery==0:
             loss = a.train()
             a.forget()
@@ -53,6 +56,4 @@ def train(show=False):
                 name = f"net_{ep}"
                 a.save(saveDir, name)
 
-        g.reset()
-        epscore = a.reset()
-        epscores.append(epscore)
+

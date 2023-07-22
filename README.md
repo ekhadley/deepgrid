@@ -66,7 +66,7 @@ In the files, vanilla and vpg refer to vanilla policy optimization. rtg_train re
 received *after* taking an action, during that episode.
 
 The net included has played 100k episodes in training, updating the weights every 10 episodes. It also
-acheives an average score of about 70.
+acheives an average score of about 72.
 
 
 
