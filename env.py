@@ -1,5 +1,5 @@
 import cv2, numpy as np
-from deepgrid.colors import *
+from utils import *
 import torch
 
 class grid():

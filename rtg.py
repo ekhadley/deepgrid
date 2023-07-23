@@ -3,9 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from tqdm import trange
-import deepgrid as dg
-from deepgrid.colors import *
 import os, time
+from utils import *
+from env import grid
+import agent as agent
 
 class model(nn.Module):
     def __init__(self, gridSize, actions, lr=.001):
@@ -30,18 +31,13 @@ class model(nn.Module):
         X = X.reshape(X.shape[0], -1)
         X = F.relu(self.lin1(X))
         X = F.relu(self.lin2(X))
-        X = F.softmax(self.lin3(X), dim=1)
+        X = F.softmax(self.lin3(X), dim=1) #NOTE the softmax output becuase policies should give a probability distribution over actions
         return X
     def __call__(self, X): return self.forward(X)
 
     def loss(self, dists:torch.tensor, actions, weights:torch.tensor):
-        #print(green, dists, endc)
-        #print(blue, actions, endc)
-        #print(yellow, weights, endc)
         probs = torch.sum(dists*actions, axis=-1)
         logprobs = torch.log(probs)
-        #print(underline, probs, endc)
-        #print(bold, logprobs.shape, weights.shape, endc)
         eploss = torch.sum(logprobs*weights, axis=1)
         loss = -torch.mean(eploss)
         return loss
@@ -63,10 +59,7 @@ class model(nn.Module):
         self.load_state_dict(torch.load(path))
 
 
-##########################################################################
-
-
-class vpgAgent(dg.agent):
+class vpoAgent(agent.agent):
     def __init__(self, env, stepCost=0, actions=4):
         self.numActions = actions
         self.env = env
@@ -82,7 +75,7 @@ class vpgAgent(dg.agent):
         if isinstance(state, np.ndarray): state = torch.from_numpy(state)
         dist = torch.flatten(self.policy(state))
         if greedy: action = np.argmax(dist.detach().numpy())
-        else: action = dg.sampleDist(dist.detach().numpy())
+        else: action = sampleDist(dist.detach().numpy())
         return action, dist
 
     #NOTE: for a policy agent, remember should only be called AFTER and episode, not during.
@@ -114,6 +107,63 @@ class vpgAgent(dg.agent):
         self.actions = []
         self.weights = []
 
+startVersion = 0
+#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
+loadDir = f"D:\\wgmn\\deepgrid\\rtg_100k.pth"
+saveDir = f"D:\\wgmn\\deepgrid\\rtg_net_new"
 
+def train(show=False,
+          save=saveDir,
+          load=loadDir,
+          saveEvery = 5000,
+          trainEvery = 10,
+          numEpisodes = 1_000_000):
 
+    torch.device("cuda")
 
+    g = grid((8, 5), numFood=12, numBomb=12)
+    a = vpoAgent(g)
+    if load is not None: a.load(loadDir)
+
+    epscores, losses = [], []
+    for i in (t:=trange(numEpisodes, ncols=110, unit="ep")):
+        ep = i + startVersion
+        states, rtg, actions = [], [], []
+        while not g.terminate:
+            state = g.observe()
+            action, dist = a.chooseAction(state)
+            reward = a.doAction(action)
+            
+            hot = np.eye(a.numActions)[action]
+            states.append(state)
+            rtg = [e + reward for e in rtg] # first accumulating rewards to get the reward-to-go
+            rtg.append(reward) # then adding the reward for the current step
+            actions.append(hot)
+
+            if show:
+                im = g.view()
+                cv2.imshow("grid", im)
+                cv2.waitkey(50)
+
+        a.remember(states, actions, rtg)
+        g.reset()
+        epscore = a.reset()
+        epscores.append(epscore)
+        if i != 0 and i%trainEvery==0:
+            loss = a.train()
+            a.forget()
+            
+            recents = np.mean(epscores[-100:-1])
+            desc = f"{purple}scores:{recents:.2f}, {red}loss:{loss.detach():.3f}{blue}"
+            t.set_description(desc)
+            if ep%saveEvery == 0:
+                name = f"net_{ep}"
+                a.save(save, name)
+
+def play(load=loadDir):
+    g = grid((8, 5), numFood=12, numBomb=12)
+    a = vpoAgent(g)
+    agent.play(a, g, load=load)
+
+#play()
+#train()

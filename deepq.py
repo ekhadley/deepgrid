@@ -3,9 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from tqdm import trange
-import deepgrid as dg
-from deepgrid.colors import *
 import os, time
+from utils import *
+from env import grid
+import agent
 
 class model(nn.Module):
     def __init__(self, gridSize, actions, lr=.001):
@@ -79,9 +80,7 @@ class model(nn.Module):
     def load(self, path):
         self.load_state_dict(torch.load(path))
 
-##########################################################################
-
-class qAgent(dg.agent):
+class qAgent(agent.agent):
     def __init__(self, env, stepCost=0, actions=4):
         self.env = env
         self.score = 0
@@ -112,8 +111,7 @@ class qAgent(dg.agent):
         if torch.is_tensor(state): state = state.numpy()
         if torch.is_tensor(nextState): nextState = nextState.numpy()
         self.memory[0].append(state)
-        hot = np.eye(self.actions)[int(action)]
-        self.memory[1].append(hot)
+        self.memory[1].append(action)
         self.memory[2].append(reward)
         self.memory[3].append(nextState)
         self.memory[4].append(terminal)
@@ -150,8 +148,74 @@ class qAgent(dg.agent):
         #self.update()
         return s
 
+startVersion = 0
+#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
+saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
 
+def train(show=False,
+          load=loadDir,
+          save=saveDir,
+          epsilon = 1.0,
+          decayRate = 0.99999,
+          maxMemory = 10_000,
+          saveEvery = 5000,
+          switchEvery = 5,
+          batchSize = 64,
+          numEpisodes = 1_000_000):
+    
+    torch.device("cuda")
 
+    g = grid((8, 5), numFood=12, numBomb=12)
+    a = qAgent(g)
 
+    if load is not None: a.load(loadDir)
+    a.epsilon = epsilon
+    a.decayRate = decayRate
+    a.maxMemory = maxMemory
 
+    epscores, losses = [], []
+    trainingStart = 2*batchSize//g.maxSteps
+    for i in (t:=trange(numEpisodes, ncols=110, unit="ep")):
+        ep = i + startVersion
+        while not g.terminate:
+            state = g.observe()
+            if a.epsRandom() or i < trainingStart:
+                action = a.randomAction()
+            else:
+                action, pred = a.chooseAction(state)
 
+            reward = a.doAction(action)
+            a.epsilon *= a.decayRate
+
+            if show:
+                im = g.view()
+                cv2.imshow("grid", im)
+                cv2.waitkey(50)
+
+            hot = np.eye(a.actions)[int(action)]
+            exp = (state, hot, reward, g.observe(tensor=False), 1*g.terminate)
+            a.remember(exp)
+
+        g.reset()
+        epscore = a.reset()
+        epscores.append(epscore)
+        if i >= trainingStart:
+            experience = a.sampleMemory(batchSize)
+            out, loss = a.train(experience)
+            if i%switchEvery==0: a.update()
+            
+            recents = np.mean(epscores[-100:-1])
+            desc = f"{purple}scores:{recents:.2f}, {cyan}eps:{a.epsilon:.3f}, {red}loss:{loss.detach():.3f}{blue}"
+            t.set_description(desc)
+            if ep%saveEvery == 0:
+                name = f"net_{ep}"
+                a.save(save, name)
+
+def play(load=loadDir,):
+    g = grid((8, 5), numFood=12, numBomb=12)
+    a = qAgent(g)
+    agent.play(agent=a, grid=g, load=load)
+
+#play()
+#train()

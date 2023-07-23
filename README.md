@@ -21,6 +21,12 @@ like tanking a bomb in order to get access to two or more rewards. The ekhadley 
 70-80 points per episode. Below I'll go over the basics of each method implemented, and the performance
 after training.
 
+The structure of the project is annoying, I know. It's just so much code is repeated between different
+algorithm implementations, but the differences are hard to inherit around or make cross-compatible. I
+just adopted a rewrite everything approach, and shoved it all into one files for one implementation. The 
+model, agent class, and training loop are all rewritten from scratch for each one. The playing loop
+is identical however, so thats written in agent.py and jsut takes in a grid and agent instance.
+
 ## Deep Q Learner.
 Deep Q is the simplest drl method to implement so it seemed like a good starting point. The goal of deep
 Q is to learn the value of taking every action for a given input state. The policy used once our Q net has
@@ -61,7 +67,7 @@ $\large Loss(state, actionProbability, weight) = -ln(actionProbability)*weight$
 . Note that $\large R(\tau, \alpha)$ is not the only choice that can be made. Several choices, all related to
 the wider concept of the "value" of a particular  set of actions or states, can be chosen. 
 
-In the files, vanilla and vpg refer to vanilla policy optimization. rtg_train refers to the fact that the
+In the files, vanilla and vpo refer to vanilla policy optimization. rtg refers to the fact that the
 "weight" of each action in the loss function is the so-called "reward-to-go": the sum of all rewards
 received *after* taking an action, during that episode.
 
