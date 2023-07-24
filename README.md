@@ -43,9 +43,11 @@ useful. This is a pretty common property of RL algorithms.
 
 The trained net I have included (trained for the default parameters I gave at the top) has played 100k
 episodes, with a batch size of 64, totalling 6.4 million states seen in training. Its average score is
-71: about human level performance. I had some nice score gains for doing extra training with low epsilon
+75: about human level performance. I had some nice score gains for doing extra training with low epsilon
 (0.05-0.01) after the main training run. Training with higher epsilon at this point actually started
-hurting my performance. Probably an estimation bias going on that causes this.
+hurting my performance. Probably an estimation bias going on that causes this. I tried tweaking some
+small things and retraining, But could not crack 70 without going well beyond 100k episodes. Averaging
+a score of 75 here seems to be a randomly very good training run/weight initialization. Worth investigating.
 
 ## Vanilla Policy Optimization.
 Policy Optimization is the basis of many more capable agents in more complex environments. Instead of
