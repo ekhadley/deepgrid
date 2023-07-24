@@ -67,6 +67,9 @@ $\large Loss(state, actionProbability, weight) = -ln(actionProbability)*weight$
 . Note that $\large R(\tau, \alpha)$ is not the only choice that can be made. Several choices, all related to
 the wider concept of the "value" of a particular  set of actions or states, can be chosen. 
 
+This algorithm is on-policy, or online, meaning we can only update our policy using experience collected
+with this exact version. Once we update our weights, the experience we collected cannot be used again.
+
 In the files, vanilla and vpo refer to vanilla policy optimization. rtg refers to the fact that the
 "weight" of each action in the loss function is the so-called "reward-to-go": the sum of all rewards
 received *after* taking an action, during that episode.
