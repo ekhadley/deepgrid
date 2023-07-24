@@ -26,11 +26,17 @@ class model(nn.Module):
         sh = X.shape
         #assert len(sh)==4, f"got input tensor shape {sh}. Should be length 4: (batch, channels, width, height)"
         if len(sh) == 3: X = X.reshape(1, *sh)
-        X = F.relu(self.conv1(X))
-        X = F.leaky_relu(self.conv2(X))
+        X = self.conv1(X)
+        X = F.leaky_relu(X)
+        X = self.conv2(X)
+        X = F.leaky_relu(X)
+        
         X = X.reshape(X.shape[0], -1)
-        X = F.relu(self.lin1(X))
-        X = F.relu(self.lin2(X))
+        
+        X = self.lin1(X)
+        X = F.relu(X)
+        X = self.lin2(X)
+        X = F.relu(X)
         X = self.lin3(X)
         return X
     def __call__(self, X): return self.forward(X)
@@ -157,12 +163,12 @@ def train(show=False,
           load=loadDir,
           save=saveDir,
           epsilon = 1.0,
-          decayRate = 0.99999,
+          decayRate = 0.999997,
           maxMemory = 10_000,
           saveEvery = 5000,
           switchEvery = 5,
           batchSize = 64,
-          numEpisodes = 1_000_000):
+          numEpisodes = 100_001):
     
     torch.device("cuda")
 
@@ -176,7 +182,7 @@ def train(show=False,
 
     epscores, losses = [], []
     trainingStart = 2*batchSize//g.maxSteps
-    for i in (t:=trange(numEpisodes, ncols=110, unit="ep")):
+    for i in (t:=trange(numEpisodes, ncols=120, unit="ep")):
         ep = i + startVersion
         while not g.terminate:
             state = g.observe()
@@ -191,7 +197,7 @@ def train(show=False,
             if show:
                 im = g.view()
                 cv2.imshow("grid", im)
-                cv2.waitkey(50)
+                cv2.waitKey(50)
 
             hot = np.eye(a.actions)[int(action)]
             exp = (state, hot, reward, g.observe(tensor=False), 1*g.terminate)
@@ -217,5 +223,7 @@ def play(load=loadDir,):
     a = qAgent(g)
     agent.play(agent=a, grid=g, load=load)
 
-#play()
-#train()
+
+if __name__ == "__main__":
+    play()
+    #train(load=None)
