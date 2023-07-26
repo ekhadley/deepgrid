@@ -3,7 +3,7 @@ from utils import *
 import torch
 
 class grid():
-    def __init__(self, size, startPos=None, numBomb=2, numFood=2, windowWidth=1000, maxSteps=16, foodReward=10, bombReward=-10):
+    def __init__(self, size, startPos=None, numBomb=12, numFood=12, windowWidth=1000, maxSteps=16, foodReward=10, bombReward=-10):
         self.stepsTaken = 0
         self.maxSteps = maxSteps
         self.terminate = False
@@ -172,7 +172,7 @@ class grid():
     def printObs(self, obs=None):
         obs = self.observation if obs is None else obs
         cols = [cyan, green, red]
-        for i in range(3): print(f"{cols[i]}{self.observation[i]}{endc}")
+        for i in range(3): print(f"{bold}{cols[i]}{self.observation[i]}{endc}")
         print()
 
 
