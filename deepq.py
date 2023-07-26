@@ -7,6 +7,7 @@ import os, time
 from utils import *
 from env import grid
 import agent
+import wandb
 
 class model(nn.Module):
     def __init__(self, gridSize, actions, lr=.001):
@@ -14,9 +15,13 @@ class model(nn.Module):
         self.gridSize, self.actions, self.lr = gridSize, actions, lr
         width, height = gridSize
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1)
+        self.ac1 = nn.LeakyReLU()
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1)
+        self.ac2 = nn.LeakyReLU()
         self.lin1 = nn.Linear(32*height*width, 512)
+        self.ac3 = nn.ReLU()
         self.lin2 = nn.Linear(512, 64)
+        self.ac4 = nn.ReLU()
         self.lin3 = nn.Linear(64, self.actions)
 
         #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
@@ -26,30 +31,22 @@ class model(nn.Module):
         sh = X.shape
         #assert len(sh)==4, f"got input tensor shape {sh}. Should be length 4: (batch, channels, width, height)"
         if len(sh) == 3: X = X.reshape(1, *sh)
-        X = self.conv1(X)
-        X = F.leaky_relu(X)
-        X = self.conv2(X)
-        X = F.leaky_relu(X)
-        
+        X = self.ac1(self.conv1(X))
+        X = self.ac2(self.conv2(X))
         X = X.reshape(X.shape[0], -1)
-        
-        X = self.lin1(X)
-        X = F.relu(X)
-        X = self.lin2(X)
-        X = F.relu(X)
+        X = self.ac3(self.lin1(X))
+        X = self.ac4(self.lin2(X))
         X = self.lin3(X)
         return X
     def __call__(self, X): return self.forward(X)
 
     def loss(self, experience, out, discount=1, debug=False):
         states, actions, rewards, nstates, terminal = experience
-
         nextpred = self.forward(nstates)
         tmask = (1 - terminal)*discount
-        trueQ = rewards + (nextpred.max(axis=1).values)*tmask
-        predQ = (out*actions).sum(axis=1)
-        diff = predQ - trueQ
-        loss = diff.pow(2).sum()
+        trueQ = rewards + (torch.max(nextpred, axis=1).values)*tmask
+        predQ = torch.sum(out*actions, axis=1)
+        loss = F.mse_loss(predQ, trueQ)
         
         if debug:
             print(f"{red}{states.shape=}{endc}")
@@ -166,7 +163,7 @@ def train(show=False,
           decayRate = 0.999997,
           maxMemory = 10_000,
           saveEvery = 5000,
-          switchEvery = 5,
+          switchEvery = 3,
           batchSize = 64,
           numEpisodes = 100_001):
     
@@ -175,6 +172,9 @@ def train(show=False,
     g = grid((8, 5), numFood=12, numBomb=12)
     a = qAgent(g)
 
+    wandb.init(project="deepq")
+    wandb.watch(a.target, log="all")
+    
     if load is not None: a.load(loadDir)
     a.epsilon = epsilon
     a.decayRate = decayRate
@@ -211,6 +211,7 @@ def train(show=False,
             out, loss = a.train(experience)
             if i%switchEvery==0: a.update()
             
+            wandb.log({"score": epscore, "loss":loss, "epsilon":a.epsilon})
             recents = np.mean(epscores[-100:-1])
             desc = f"{purple}scores:{recents:.2f}, {cyan}eps:{a.epsilon:.3f}, {red}loss:{loss.detach():.3f}{blue}"
             t.set_description(desc)
@@ -225,5 +226,5 @@ def play(load=loadDir,):
 
 
 if __name__ == "__main__":
-    play()
-    #train(load=None)
+    #play()
+    train(load=None)

@@ -7,6 +7,7 @@ import os, time
 from utils import *
 from env import grid
 import agent
+import wandb
 
 class model(nn.Module):
     def __init__(self, gridSize, actions, lr=.001):
@@ -14,10 +15,15 @@ class model(nn.Module):
         self.gridSize, self.actions, self.lr = gridSize, actions, lr
         width, height = gridSize
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1)
+        self.ac1 = nn.LeakyReLU()
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1)
+        self.ac2 = nn.LeakyReLU()
         self.lin1 = nn.Linear(32*height*width, 512)
+        self.ac3 = nn.ReLU()
         self.lin2 = nn.Linear(512, 64)
+        self.ac4 = nn.ReLU()
         self.lin3 = nn.Linear(64, self.actions)
+        self.out = nn.Softmax(dim=1)
 
         #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
         self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr)
@@ -26,37 +32,40 @@ class model(nn.Module):
         sh = X.shape
         #assert len(sh)==4, f"got input tensor shape {sh}. Should be length 4: (batch, channels, width, height)"
         if len(sh) == 3: X = X.reshape(1, *sh)
-        X = self.conv1(X)
-        X = F.leaky_relu(X)
-        X = self.conv2(X)
-        X = F.leaky_relu(X)
-        
+        X = self.ac1(self.conv1(X))
+        X = self.ac2(self.conv2(X))
         X = X.reshape(X.shape[0], -1)
-        
-        X = self.lin1(X)
-        X = F.relu(X)
-        X = self.lin2(X)
-        X = F.relu(X)
-        X = self.lin3(X)
-        X = F.softmax(X, dim=1) #NOTE the softmax output becuase policies should give a probability distribution over actions
+        X = self.ac3(self.lin1(X))
+        X = self.ac4(self.lin2(X))
+        X = self.out(self.lin3(X))
         return X
     def __call__(self, X): return self.forward(X)
 
-    def loss(self, dists:torch.tensor, actions, weights:torch.tensor):
-        probs = torch.sum(dists*actions, axis=-1)
+    def loss(self, dists:torch.tensor, actions:torch.tensor, weights:torch.tensor, debug=False):
+        masked = dists*actions
+        probs = torch.sum(masked, axis=-1)
         logprobs = torch.log(probs)
-        eploss = torch.sum(logprobs*weights, axis=1)
-        loss = -torch.mean(eploss)
+        wprobs = logprobs*weights
+        loss = -torch.mean(wprobs)
+
+        if debug:
+            print(f"\n{red}{dists=}{endc}")
+            print(f"{yellow}{actions=}{endc}")
+            print(f"{purple}{weights=}{endc}")
+            print(f"{bold}{masked=}{endc}")
+            print(f"{blue}{probs=}{endc}")
+            print(f"{green}{logprobs=}{endc}")
+            print(f"{cyan}{wprobs=}{endc}\n\n")
+            print(f"{bold}{loss=}{endc}")
         return loss
 
-    def train(self, states, actions, weights):
-        out = self.forward(states)
-        dists = out.reshape(actions.shape)
-        los = self.loss(dists, actions, weights)
+    def train(self, states, actions, weights, debug=False):
+        dists = self.forward(states)
+        los = self.loss(dists, actions, weights, debug=debug)
         self.opt.zero_grad()
         los.backward()
         self.opt.step()
-        return los
+        return dists, los
 
     def save(self, path, name):
         os.makedirs(path, exist_ok=True)
@@ -85,18 +94,17 @@ class vpoAgent(agent.agent):
         else: action = sampleDist(dist.detach().numpy())
         return action, dist
 
-    #NOTE: for a policy agent, remember should only be called AFTER and episode, not during.
     def remember(self, states, actions, weights):
-        self.states.append(states)
-        self.actions.append(actions)
-        self.weights.append(weights)
-
-    def train(self):
         sh = (3, self.env.size[1], self.env.size[0])
-        states = torch.Tensor(np.float32(self.states)).reshape(-1, *sh)
+        self.states += states
+        self.actions += actions
+        self.weights += weights
+
+    def train(self, debug=False):
+        states = torch.Tensor(np.float32(self.states))
         actions = torch.Tensor(np.float32(self.actions))
         weights = torch.Tensor(np.float32(self.weights))
-        return self.policy.train(states, actions, weights)
+        return self.policy.train(states, actions, weights, debug=debug)
 
     def save(self, path, name):
         self.policy.save(path, name)
@@ -114,22 +122,25 @@ class vpoAgent(agent.agent):
         self.actions = []
         self.weights = []
 
-startVersion = 70000
-#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
-loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
+startVersion = 60000
+loadDir = f"D:\\wgmn\\deepgrid\\vpo_net_new\\net_{startVersion}.pth"
+#loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
 saveDir = f"D:\\wgmn\\deepgrid\\vpo_net_new"
 
 def train(show=False,
           save=saveDir,
           load=loadDir,
           saveEvery = 5000,
-          trainEvery = 10,
+          trainEvery = 20,
           numEpisodes = 100_001):
 
     torch.device("cuda")
 
     g = grid((8, 5), numFood=12, numBomb=12)
     a = vpoAgent(g)
+    
+    wandb.init(project="vpo")
+    wandb.watch(a.policy, log="all")
     if load is not None: a.load(loadDir)
 
     epscores, losses = [], []
@@ -157,9 +168,10 @@ def train(show=False,
         epscore = a.reset()
         epscores.append(epscore)
         if i != 0 and i%trainEvery==0:
-            loss = a.train()
+            dists, loss = a.train()
             a.forget()
             
+            wandb.log({"score": epscore, "loss":loss.item})
             recents = np.mean(epscores[-100:-1])
             desc = f"{purple}scores:{recents:.2f}, {red}loss:{loss.detach():.3f}{blue}"
             t.set_description(desc)
@@ -173,5 +185,5 @@ def play(load=loadDir):
     agent.play(a, g, load=load)
 
 if __name__ == "__main__":
-    play()
-    #train(load=loadDir, save=saveDir)
+    #play()
+    train(load=loadDir, save=saveDir)
