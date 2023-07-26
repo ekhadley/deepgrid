@@ -6,7 +6,7 @@ steps/ep, 0 step cost, +-10 for food/bomb, 12 of each, running into a wall does 
 starting position every ep. Example starting state:
 <pre>
 ##########################
-# o  o    🟥🟥 o  x  o #
+# o  o     x  x  o  x  o #
 # o  x  x  x        o    #
 # o  o           @  x  o #
 #    x  x  x     o  o  x #
