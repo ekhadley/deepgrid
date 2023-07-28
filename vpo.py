@@ -30,8 +30,7 @@ class model(nn.Module):
 
     def forward(self, X):
         sh = X.shape
-        #assert len(sh)==4, f"got input tensor shape {sh}. Should be length 4: (batch, channels, width, height)"
-        if len(sh) == 3: X = X.reshape(1, *sh)
+        if X.ndim==3: X = X.reshape(1, *sh)
         X = self.ac1(self.conv1(X))
         X = self.ac2(self.conv2(X))
         X = X.reshape(X.shape[0], -1)
@@ -51,10 +50,10 @@ class model(nn.Module):
         if debug:
             print(f"\n{red}{dists=}{endc}")
             print(f"{yellow}{actions=}{endc}")
-            print(f"{purple}{weights=}{endc}")
             print(f"{bold}{masked=}{endc}")
             print(f"{blue}{probs=}{endc}")
             print(f"{green}{logprobs=}{endc}")
+            print(f"{purple}{weights=}{endc}")
             print(f"{cyan}{wprobs=}{endc}\n\n")
             print(f"{bold}{loss=}{endc}")
         return loss
@@ -76,15 +75,19 @@ class model(nn.Module):
 
 
 class vpoAgent(agent.agent):
-    def __init__(self, env, stepCost=0, actions=4):
+    def __init__(self, env, stepCost=0, actions=4, lr=0.001, baseline=False):
         self.numActions = actions
         self.env = env
         self.score = 0
         self.stepCost = stepCost
-        self.policy = model(self.env.size, 4)
+        self.policy = model(self.env.size, 4, lr=lr)
+        self.baseline = baseline
         self.states = []
         self.actions = []
         self.weights = []
+        self.rewards = []
+        self.nstates = []
+        self.terminals = []
 
     def chooseAction(self, state, greedy=False):
         #if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
@@ -95,7 +98,6 @@ class vpoAgent(agent.agent):
         return action, dist
 
     def remember(self, states, actions, weights):
-        sh = (3, self.env.size[1], self.env.size[0])
         self.states += states
         self.actions += actions
         self.weights += weights
@@ -122,22 +124,23 @@ class vpoAgent(agent.agent):
         self.actions = []
         self.weights = []
 
-startVersion = 60000
-loadDir = f"D:\\wgmn\\deepgrid\\vpo_net_new\\net_{startVersion}.pth"
-#loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
+startVersion = 100000
+#loadDir = f"D:\\wgmn\\deepgrid\\vpo_net_new\\net_{startVersion}.pth"
+loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
 saveDir = f"D:\\wgmn\\deepgrid\\vpo_net_new"
 
 def train(show=False,
           save=saveDir,
           load=loadDir,
           saveEvery = 5000,
-          trainEvery = 20,
+          trainEvery = 30,
+          lr = 0.001,
           numEpisodes = 100_001):
 
     torch.device("cuda")
 
     g = grid((8, 5), numFood=12, numBomb=12)
-    a = vpoAgent(g)
+    a = vpoAgent(g, lr=lr)
     
     wandb.init(project="vpo")
     wandb.watch(a.policy, log="all")
@@ -171,13 +174,14 @@ def train(show=False,
             dists, loss = a.train()
             a.forget()
             
-            wandb.log({"score": epscore, "loss":loss.item})
-            recents = np.mean(epscores[-100:-1])
-            desc = f"{purple}scores:{recents:.2f}, {red}loss:{loss.detach():.3f}{blue}"
+            wandb.log({"score": epscore, "loss":loss})
+            recents = np.mean(epscores[-200:-1])
+            d = np.array_str(dist.detach().numpy(), precision=3, suppress_small=True)
+            desc = f"{bold}{blue}scores:{recents:.2f}, {blue}dist={d}, {endc}{blue}"
             t.set_description(desc)
-            if ep%saveEvery == 0:
-                name = f"net_{ep}"
-                a.save(save, name)
+        if save is not None and ep%saveEvery == 0:
+            name = f"net_{ep}"
+            a.save(save, name)
 
 def play(load=loadDir):
     g = grid((8, 5), numFood=12, numBomb=12)
@@ -185,5 +189,5 @@ def play(load=loadDir):
     agent.play(a, g, load=load)
 
 if __name__ == "__main__":
-    #play()
-    train(load=loadDir, save=saveDir)
+    play(load=loadDir)
+    #train(load=None, save=saveDir, lr=0.001)

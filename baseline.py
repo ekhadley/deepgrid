@@ -24,8 +24,7 @@ class valnet(nn.Module):
         self.ac4 = nn.ReLU()
         self.lin3 = nn.Linear(64, 1)
         #self.to("cuda")
-        
-        #self.opt = torch.optim.SGD(self.parameters(), lr=lr)
+        #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
         self.opt = torch.optim.AdamW(self.parameters(), lr=lr)
 
     def forward(self, X):
@@ -78,7 +77,7 @@ class valnet(nn.Module):
         self.load_state_dict(torch.load(path))
 
 
-class vacAgent(agent.agent):
+class bpoAgent(agent.agent):
     def __init__(self, env, stepCost=0, actions=4, policyLr=0.001, valnetLr=0.001):
         self.numActions = actions
         self.env = env
@@ -90,7 +89,7 @@ class vacAgent(agent.agent):
         self.update()
         # policy updates need states, actions, weights from the valnet
         # valnet updates need states, rewards, next states, terminal_state
-        self.memory = tuple([[] for i in range(6)])
+        self.memory = [[] for i in range(6)]
 
     def chooseAction(self, state, greedy=False):
         #if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
@@ -102,12 +101,12 @@ class vacAgent(agent.agent):
         return action, dist
 
     def remember(self, state, action, reward, weight, nextState, terminal):
-        self.memory[0].append(state)
-        self.memory[1].append(action)
-        self.memory[2].append(reward)
-        self.memory[3].append(weight)
-        self.memory[4].append(nextState)
-        self.memory[5].append(terminal)
+        self.memory[0] += state
+        self.memory[1] += action
+        self.memory[2] += reward
+        self.memory[3] += weight
+        self.memory[4] += nextState
+        self.memory[5] += terminal
 
     def train(self):
         states, actions, rewards, weights, nstates, terminals = self.memory
@@ -149,13 +148,13 @@ class vacAgent(agent.agent):
         self.score = 0
         return s
     def forget(self):
-        self.memory = tuple([[] for i in range(6)])
+        self.memory = [[] for i in range(6)]
 
 
-startVersion = 0
-#loadDir = f"D:\\wgmn\\deepgrid\\vac_net_new\\net_{startVersion}"
-loadDir = f"D:\\wgmn\\deepgrid\\vac_80k"
-saveDir = f"D:\\wgmn\\deepgrid\\vac_net_new"
+startVersion = 100000
+#loadDir = f"D:\\wgmn\\deepgrid\\bpo_net_new\\net_{startVersion}"
+loadDir = f"D:\\wgmn\\deepgrid\\bpo_100k"
+saveDir = f"D:\\wgmn\\deepgrid\\bpo_net_new"
 
 def train(show=False,
           save=saveDir,
@@ -169,9 +168,9 @@ def train(show=False,
 
 
     g = grid((8, 5), numFood=12, numBomb=12)
-    a = vacAgent(g, policyLr=policyLr, valnetLr=valnetLr)
+    a = bpoAgent(g, policyLr=policyLr, valnetLr=valnetLr)
     
-    wandb.init(project="vac")
+    wandb.init(project="baseline")
     wandb.watch(a.policy, a.target, log="all")
     if load is not None:
         print(f"{green}attemping load from {loadDir}{endc}")
@@ -181,28 +180,33 @@ def train(show=False,
     for i in (t:=trange(numEpisodes, ncols=120, unit="ep")):
         ep = i + startVersion
         ival = a.getVal(g.observe())
+        states, actions, rewards, weights, nstates, terminals = [], [], [], [], [], []
         while not g.terminate:
             state = g.observe()
             action, dist = a.chooseAction(state)
             reward = a.doAction(action)
             nstate = g.observe(tensor=False)
 
+            states.append(state)
+            nstates.append(nstate)
             hot = np.eye(a.numActions)[action]
+            actions.append(hot)
             
-            vnext = a.getVal(nstate)
-            weight = reward + vnext
+            val = a.getVal(nstate)
+            weights = [e+reward for e in weights] # first accumulating rewards to get the reward-to-go
+            weights.append(reward - val) # then appending reward-baseline value
             
-            a.remember(state, hot, reward, weight, nstate, 1*g.terminate)
+            rewards.append(reward)
+            terminals.append(1*g.terminate)
 
             if show:
                 im = g.view()
                 cv2.imshow("grid", im)
                 cv2.waitKey(150)
                 d = np.array_str(dist.detach().numpy(), precision=3, suppress_small=True)
-                print(f"{bold}{yellow}dist={d}, {green}val={ival:.2f}, {red}{weight} = {reward} + {vnext}{endc}")
+                #print(f"{bold}{yellow}dist={d}, {green}val={ival:.2f}")
 
-        #try: print(f"\n{blue}{weight} = {green}{reward} + {yellow}{tdiff}{endc}")
-        #except: pass
+        a.remember(states, actions, rewards, weights, nstates, terminals)
         g.reset()
         epscore = a.reset()
         epscores.append(epscore)
@@ -236,18 +240,18 @@ def sweep():
         'switchEvery': {'values': [1, 2, 3, 4, 5]},
         }
     }
-    swid = wandb.sweep(sweep=sweep_configuration, project='vacsweep')
+    swid = wandb.sweep(sweep=sweep_configuration, project='sweep')
     wandb.agent(swid, function=train)
 
 def play(load=loadDir, show=False):
     g = grid(size=(8, 5), numFood=12, numBomb=12)
-    a = vacAgent(g)
+    a = bpoAgent(g)
     agent.play(a, g, load=load, show=show)
 
 
-#torch.manual_seed(0)
-#np.random.seed(0)
+torch.manual_seed(0)
+np.random.seed(0)
 if __name__ == "__main__":
-    #play(load=loadDir, show=False)
-    train(load=None, save=saveDir, valnetLr=0.01, policyLr=0.001, trainEvery=50, switchEvery=5, numEpisodes=100_001, show=False)
+    play(load=loadDir, show=False)
+    #train(load=None, save=saveDir, valnetLr=0.01, policyLr=0.001, trainEvery=30, switchEvery=3, numEpisodes=100_001, show=False)
     #sweep()

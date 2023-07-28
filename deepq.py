@@ -23,14 +23,14 @@ class model(nn.Module):
         self.lin2 = nn.Linear(512, 64)
         self.ac4 = nn.ReLU()
         self.lin3 = nn.Linear(64, self.actions)
-
+        self.to("cuda")
         #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
-        self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr)
+        self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr, fused=True)
 
     def forward(self, X):
         sh = X.shape
-        #assert len(sh)==4, f"got input tensor shape {sh}. Should be length 4: (batch, channels, width, height)"
-        if len(sh) == 3: X = X.reshape(1, *sh)
+        if X.ndim==3: X = X.reshape(1, *sh)
+        if not X.is_cuda: X = X.to("cuda")
         X = self.ac1(self.conv1(X))
         X = self.ac2(self.conv2(X))
         X = X.reshape(X.shape[0], -1)
@@ -56,7 +56,7 @@ class model(nn.Module):
             print(f"{blue}{tmask.detach()=}{endc}")
             print(f"{green}{trueQ.detach()=}{endc}")
             print(f"{yellow}{predQ.detach()=}{endc}")
-            print(f"{purple}{diff.detach()=}{endc}")
+            print(f"{purple}{(predQ-trueQ).detach()=}{endc}")
             print(f"{bold}{loss.detach()=}{endc}\n")
         return loss
 
@@ -84,7 +84,7 @@ class model(nn.Module):
         self.load_state_dict(torch.load(path))
 
 class qAgent(agent.agent):
-    def __init__(self, env, stepCost=0, actions=4):
+    def __init__(self, env, stepCost=0, actions=4, lr=0.001):
         self.env = env
         self.score = 0
         self.gamma = 1
@@ -96,14 +96,14 @@ class qAgent(agent.agent):
         self.memTypes = 5
         # (states, actions, rewards, next_state, is_terminal)
         self.memory = [[] for i in range(self.memTypes)]
-        self.main = model(self.env.size, 4)
-        self.target = model(self.env.size, 4)
+        self.main = model(self.env.size, 4, lr=lr)
+        self.target = model(self.env.size, 4, lr=lr)
         self.update()
 
     def chooseAction(self, state):
         #if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
         if isinstance(state, np.ndarray): state = torch.from_numpy(state)
-        pred = self.main(state).detach().numpy()
+        pred = self.main(state).detach().cpu().numpy()
         action = np.argmax(pred)
         return action, pred
 
@@ -121,7 +121,7 @@ class qAgent(agent.agent):
         if len(self.memory[0]) > self.maxMemory:
             for i in range(self.memTypes): self.memory[i].pop(0)
 
-    def sampleMemory(self, num, tensor=True):
+    def sampleMemory(self, num, tensor=True, cuda=True):
         assert len(self.memory[1]) > num, "requested sample size greater than number of recorded experiences"
         samp = np.random.randint(0, len(self.memory[0]), size=(num))
         
@@ -131,7 +131,7 @@ class qAgent(agent.agent):
                 mem.append(self.memory[i][s])
         if tensor:
             for i, mem in enumerate(expSample):
-                expSample[i] = torch.tensor(np.float32(expSample[i]))
+                expSample[i] = torch.tensor(np.float32(expSample[i]), device="cuda" if cuda else "cpu")
         return tuple(expSample)
 
     def train(self, experience):
@@ -151,26 +151,25 @@ class qAgent(agent.agent):
         #self.update()
         return s
 
-startVersion = 0
-#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
-loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
+startVersion = 100000
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
+#loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
 saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
 
 def train(show=False,
           load=loadDir,
           save=saveDir,
           epsilon = 1.0,
-          decayRate = 0.999997,
+          decayRate = 0.999998,
           maxMemory = 10_000,
           saveEvery = 5000,
           switchEvery = 3,
-          batchSize = 64,
+          batchSize = 32,
+          lr = 0.001,
           numEpisodes = 100_001):
     
-    torch.device("cuda")
-
     g = grid((8, 5), numFood=12, numBomb=12)
-    a = qAgent(g)
+    a = qAgent(g, lr=lr)
 
     wandb.init(project="deepq")
     wandb.watch(a.target, log="all")
@@ -212,12 +211,13 @@ def train(show=False,
             if i%switchEvery==0: a.update()
             
             wandb.log({"score": epscore, "loss":loss, "epsilon":a.epsilon})
-            recents = np.mean(epscores[-100:-1])
-            desc = f"{purple}scores:{recents:.2f}, {cyan}eps:{a.epsilon:.3f}, {red}loss:{loss.detach():.3f}{blue}"
+            recents = np.mean(epscores[-200:-1])
+            greedscore = (recents - a.epsilon*a.stepCost)/(1-a.epsilon)
+            desc = f"{bold}{purple}scores:{recents:.2f}(={greedscore:.2f}), {cyan}eps:{a.epsilon:.3f}, {red}loss:{loss.detach():.3f}{blue}"
             t.set_description(desc)
-            if ep%saveEvery == 0:
-                name = f"net_{ep}"
-                a.save(save, name)
+        if save is not None and ep%saveEvery == 0:
+            name = f"net_{ep}"
+            a.save(save, name)
 
 def play(load=loadDir,):
     g = grid((8, 5), numFood=12, numBomb=12)
@@ -225,6 +225,8 @@ def play(load=loadDir,):
     agent.play(agent=a, grid=g, load=load)
 
 
+torch.manual_seed(0)
+np.random.seed(0)
 if __name__ == "__main__":
-    #play()
-    train(load=None)
+    play()
+    #train(load=None, save=saveDir, lr=0.0008)
