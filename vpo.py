@@ -10,30 +10,7 @@ import agent
 import wandb
 import cProfile
 
-class model(nn.Module):
-    def __init__(self, gridSize, actions, lr=.001):
-        super(model, self).__init__()
-        self.gridSize, self.actions, self.lr = gridSize, actions, lr
-        width, height = gridSize
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1)
-        self.ac1 = nn.LeakyReLU()
-        self.lin1 = nn.Linear(32*height*width, 512)
-        self.ac2 = nn.ReLU()
-        self.lin2 = nn.Linear(512, self.actions)
-        self.out = nn.Softmax(dim=1)
-
-        #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
-        self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr)
-
-    #@torch.jit.script
-    def forward(self, X:torch.Tensor):
-        X = self.ac1(self.conv1(X))
-        X = X.reshape(X.shape[0], -1)
-        X = self.ac2(self.lin1(X))
-        X = self.out(self.lin2(X))
-        return X
-    def __call__(self, X): return self.forward(X)
-
+class PolicyNet(agent.policynet):
     def loss(self, dists:torch.tensor, actions:torch.tensor, weights:torch.tensor, debug=False):
         masked = dists*actions
         probs = torch.sum(masked, axis=-1)
@@ -59,21 +36,13 @@ class model(nn.Module):
         self.opt.step()
         return dists, los
 
-    def save(self, path, name):
-        os.makedirs(path, exist_ok=True)
-        torch.save(self.state_dict(), f"{path}\\{name}.pth")
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))
-
-
 class vpoAgent(agent.agent):
     def __init__(self, env, stepCost=0, actions=4, lr=0.001, baseline=False):
         self.numActions = actions
         self.env = env
         self.score = 0
         self.stepCost = stepCost
-        self.policy = model(self.env.size, 4, lr=lr)
+        self.policy = PolicyNet(self.env.size, 4, lr=lr)
         self.baseline = baseline
         self.states = []
         self.actions = []
@@ -177,11 +146,11 @@ def play(load, show=False):
     a = vpoAgent(g)
     agent.play(a, g, load=load, show=show)
 
-startVersion = 100000
+startVersion = 0
 loadDir = f"D:\\wgmn\\deepgrid\\vpo_net_new\\net_{startVersion}.pth"
 #loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
 saveDir = f"D:\\wgmn\\deepgrid\\vpo_net_new"
 
 if __name__ == "__main__":
     play(load=loadDir)
-    #train(load=None, save=saveDir, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)
+    #train(load=loadDir, save=saveDir, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)

@@ -6,76 +6,8 @@ from tqdm import trange
 import os, time
 from utils import *
 from env import grid
-import agent, vpo
+import agent, vpo, vac
 import wandb
-
-class valnet(nn.Module):
-    def __init__(self, gridSize, lr=.01):
-        super(valnet, self).__init__()
-        self.gridSize, self.lr = gridSize, lr
-        width, height = gridSize
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1)
-        self.ac1 = nn.LeakyReLU()
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1)
-        self.ac2 = nn.LeakyReLU()
-        self.lin1 = nn.Linear(32*height*width, 512)
-        self.ac3 = nn.ReLU()
-        self.lin2 = nn.Linear(512, 64)
-        self.ac4 = nn.ReLU()
-        self.lin3 = nn.Linear(64, 1)
-        #self.to("cuda")
-        #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
-        self.opt = torch.optim.AdamW(self.parameters(), lr=lr)
-
-    def forward(self, X):
-        sh = X.shape
-        if X.ndim==3: X = X.reshape(1, *sh)
-        X = self.ac1(self.conv1(X))
-        X = self.ac2(self.conv2(X))
-        X = X.reshape(X.shape[0], -1)
-        X = self.ac3(self.lin1(X))
-        X = self.ac4(self.lin2(X))
-        X = self.lin3(X)
-        return torch.flatten(X)
-    def __call__(self, X): return self.forward(X)
-
-    def loss(self, vals, rewards, nstates, terminal, discount=1, debug=False):
-        mask = 1-terminal
-        nextval = discount*self.forward(nstates)
-        trueval = rewards + mask*nextval
-        #loss = F.mse_loss(vals, trueval)
-        loss = torch.mean((vals-trueval)**4)
-        if debug:
-            print(f"\n{blue}{vals=}{endc}")
-            print(f"{green}{rewards=}{endc}")
-            print(f"{cyan}{mask=}{endc}")
-            #print(f"{yellow}{nstates=}{endc}")
-            print(f"{red}{nextval=}{endc}")
-            print(f"{blue}{trueval=}{endc}")
-            print(f"{yellow}{loss=}{endc}\n\n\n")
-        return loss
-
-    def train(self, states, rewards, nstates, terminals, discount=1.0, debug=False):
-        vals = self.forward(states)
-        los = self.loss(vals, rewards, nstates, terminals, discount=discount, debug=debug)
-        self.opt.zero_grad()
-        los.backward()
-        self.opt.step()
-        return vals, los
-
-    def copy(self, other):
-        otherparams = [e for e in other.parameters()]
-        with torch.no_grad():
-            for i, layer in enumerate(self.parameters()):
-                layer.copy_(otherparams[i].detach().clone())
-
-    def save(self, path, name):
-        os.makedirs(path, exist_ok=True)
-        torch.save(self.state_dict(), f"{path}\\{name}.pth")
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))
-
 
 class bpoAgent(agent.agent):
     def __init__(self, env, stepCost=0, actions=4, policyLr=0.001, valnetLr=0.001):
@@ -83,9 +15,9 @@ class bpoAgent(agent.agent):
         self.env = env
         self.score = 0
         self.stepCost = stepCost
-        self.policy = vpo.model(self.env.size, 4, lr=policyLr) #we borrow the policy net architecture from our vpo implementation
-        self.target = valnet(self.env.size, lr=valnetLr)
-        self.main = valnet(self.env.size, lr=self.target.lr)
+        self.policy = vpo.PolicyNet(self.env.size, 4, lr=policyLr) #we borrow the policy net architecture from our vpo implementation
+        self.target = vac.valueNet(self.env.size, lr=valnetLr)
+        self.main = vac.valueNet(self.env.size, lr=self.target.lr)
         self.update()
         # policy updates need states, actions, weights from the valnet
         # valnet updates need states, rewards, next states, terminal_state
@@ -224,11 +156,11 @@ def play(load, show=False):
     agent.play(a, g, load=load, show=show)
 
 startVersion = 100000
-#loadDir = f"D:\\wgmn\\deepgrid\\bpo_net_new\\net_{startVersion}"
-loadDir = f"D:\\wgmn\\deepgrid\\bpo_100k"
+loadDir = f"D:\\wgmn\\deepgrid\\bpo_net_new\\net_{startVersion}"
+#loadDir = f"D:\\wgmn\\deepgrid\\bpo_100k"
 saveDir = f"D:\\wgmn\\deepgrid\\bpo_net_new"
 
 if __name__ == "__main__":
-    play(load=loadDir, show=False)
-    #train(load=None, save=saveDir, valnetLr=0.01, policyLr=0.001, trainEvery=30, switchEvery=3, numEpisodes=100_001, show=False)
+    #play(load=loadDir, show=False)
+    train(load=None, save=saveDir, valnetLr=0.01, policyLr=0.001, trainEvery=50, switchEvery=3, numEpisodes=100_001, show=False)
     #sweep()

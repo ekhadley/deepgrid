@@ -3,7 +3,98 @@ from tqdm import trange
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import os
 from utils import *
+
+class module(nn.Module):
+    def __init__(self): super(module, self).__init__()
+
+    def copy(self, other):
+        otherparams = [e for e in other.parameters()]
+        with torch.no_grad():
+            for i, layer in enumerate(self.parameters()):
+                layer.copy_(otherparams[i].detach().clone())
+
+    def save(self, path, name):
+        os.makedirs(path, exist_ok=True)
+        torch.save(self.state_dict(), f"{path}\\{name}.pth")
+
+    def load(self, path):
+        self.load_state_dict(torch.load(path))
+
+class qnet(module):
+    def __init__(self, gridSize, actions, lr=.001):
+        super(qnet, self).__init__()
+        self.gridSize, self.actions, self.lr = gridSize, actions, lr
+        width, height = gridSize
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1)
+        self.ac1 = nn.LeakyReLU()
+        self.lin1 = nn.Linear(32*height*width, 512)
+        self.ac2 = nn.ReLU()
+        self.lin2 = nn.Linear(512, self.actions)
+        self.to("cuda")
+        #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
+        self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr, fused=True)
+
+    def forward(self, X):
+        if X.ndim==3: X = torch.unsqueeze(X, 0)
+        if not X.is_cuda: X = X.to("cuda")
+        X = self.ac1(self.conv1(X))
+        X = X.reshape(X.shape[0], -1)
+        X = self.ac2(self.lin1(X))
+        X = self.lin2(X)
+        return X
+    def __call__(self, X): return self.forward(X)
+
+class policynet(module):
+    def __init__(self, gridSize, actions, lr=.001):
+        super(policynet, self).__init__()
+        self.gridSize, self.actions, self.lr = gridSize, actions, lr
+        width, height = gridSize
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1)
+        self.ac1 = nn.LeakyReLU()
+        self.lin1 = nn.Linear(32*height*width, 512)
+        self.ac2 = nn.ReLU()
+        self.lin2 = nn.Linear(512, self.actions)
+        self.out = nn.Softmax(dim=1)
+
+        #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
+        self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr)
+
+    def forward(self, X:torch.Tensor):
+        if X.ndim==3: X = torch.unsqueeze(X, 0)
+        X = self.ac1(self.conv1(X))
+        X = X.reshape(X.shape[0], -1)
+        X = self.ac2(self.lin1(X))
+        X = self.out(self.lin2(X))
+        return X
+    def __call__(self, X): return self.forward(X)
+
+
+class valnet(module):
+    def __init__(self, gridSize, lr=.01):
+        super(valnet, self).__init__()
+        self.gridSize, self.lr = gridSize, lr
+        width, height = gridSize
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1)
+        self.ac1 = nn.LeakyReLU()
+        self.lin1 = nn.Linear(32*height*width, 512)
+        self.ac2 = nn.ReLU()
+        self.lin2 = nn.Linear(512, 1)
+        #self.to("cuda")
+        
+        #self.opt = torch.optim.SGD(self.parameters(), lr=lr)
+        self.opt = torch.optim.AdamW(self.parameters(), lr=lr)
+
+    def forward(self, X):
+        if X.ndim==3: X = torch.unsqueeze(X, 0)
+        X = self.ac1(self.conv1(X))
+        X = X.reshape(X.shape[0], -1)
+        X = self.ac2(self.lin1(X))
+        X = self.lin2(X)
+        return torch.flatten(X)
+    def __call__(self, X): return self.forward(X)
+
 
 class agent:
     def __init__(self, *args, **kwargs): raise NotImplementedError
@@ -35,7 +126,6 @@ class agent:
         return np.random.randint(0,self.actions)
 
 def play(agent, grid, show=False, load=None):
-    torch.device("cuda")
     torch.inference_mode(True)
     if load is not None: agent.load(load)
 

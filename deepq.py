@@ -9,31 +9,7 @@ from env import grid
 import agent
 import wandb
 
-class model(nn.Module):
-    def __init__(self, gridSize, actions, lr=.001):
-        super(model, self).__init__()
-        self.gridSize, self.actions, self.lr = gridSize, actions, lr
-        width, height = gridSize
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1)
-        self.ac1 = nn.LeakyReLU()
-        self.lin1 = nn.Linear(32*height*width, 512)
-        self.ac2 = nn.ReLU()
-        self.lin2 = nn.Linear(512, self.actions)
-        self.to("cuda")
-        #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
-        self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr, fused=True)
-
-    def forward(self, X):
-        sh = X.shape
-        if X.ndim==3: X = X.reshape(1, *sh)
-        if not X.is_cuda: X = X.to("cuda")
-        X = self.ac1(self.conv1(X))
-        X = X.reshape(X.shape[0], -1)
-        X = self.ac2(self.lin1(X))
-        X = self.lin2(X)
-        return X
-    def __call__(self, X): return self.forward(X)
-
+class deepq_net(agent.qnet):
     def loss(self, experience, out, discount=1, debug=False):
         states, actions, rewards, nstates, terminal = experience
         nextpred = self.forward(nstates)
@@ -64,19 +40,6 @@ class model(nn.Module):
         self.opt.step()
         return out, los
 
-    def copy(self, other):
-        otherparams = [e for e in other.parameters()]
-        with torch.no_grad():
-            for i, layer in enumerate(self.parameters()):
-                layer.copy_(otherparams[i].detach().clone())
-
-    def save(self, path, name):
-        os.makedirs(path, exist_ok=True)
-        torch.save(self.state_dict(), f"{path}\\{name}.pth")
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))
-
 class qAgent(agent.agent):
     def __init__(self, env, stepCost=0, actions=4, lr=0.001):
         self.env = env
@@ -90,8 +53,8 @@ class qAgent(agent.agent):
         self.memTypes = 5
         # (states, actions, rewards, next_state, is_terminal)
         self.memory = [[] for i in range(self.memTypes)]
-        self.main = model(self.env.size, 4, lr=lr)
-        self.target = model(self.env.size, 4, lr=lr)
+        self.main = deepq_net(self.env.size, 4, lr=lr)
+        self.target = deepq_net(self.env.size, 4, lr=lr)
         self.update()
 
     def chooseAction(self, state):
@@ -213,11 +176,11 @@ def play(load):
     a = qAgent(g)
     agent.play(agent=a, grid=g, load=load)
 
-startVersion = 200000
+startVersion = 0
 loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
 #loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
 saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
 
 if __name__ == "__main__":
     play(load=loadDir)
-    #train(load=loadDir, save=saveDir, lr=0.001, switchEvery=3, numEpisodes=10_001)
+    #train(load=loadDir, save=saveDir, lr=0.001, switchEvery=3, epsilon=1, decayRate=0.999997, numEpisodes=100_001)
