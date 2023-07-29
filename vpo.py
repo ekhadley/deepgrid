@@ -47,9 +47,6 @@ class vpoAgent(agent.agent):
         self.states = []
         self.actions = []
         self.weights = []
-        self.rewards = []
-        self.nstates = []
-        self.terminals = []
 
     def chooseAction(self, state, greedy=False):
         #if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
