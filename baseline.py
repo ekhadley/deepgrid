@@ -150,14 +150,8 @@ class bpoAgent(agent.agent):
     def forget(self):
         self.memory = [[] for i in range(6)]
 
-
-startVersion = 100000
-#loadDir = f"D:\\wgmn\\deepgrid\\bpo_net_new\\net_{startVersion}"
-loadDir = f"D:\\wgmn\\deepgrid\\bpo_100k"
-saveDir = f"D:\\wgmn\\deepgrid\\bpo_net_new"
-
 def train(show=False,
-          save=saveDir,
+          save=None,
           load=None,
           saveEvery = 5000,
           trainEvery = 30,
@@ -165,7 +159,6 @@ def train(show=False,
           numEpisodes = 15_001,
           policyLr = 0.001,
           valnetLr = 0.001):
-
 
     g = grid((8, 5), numFood=12, numBomb=12)
     a = bpoAgent(g, policyLr=policyLr, valnetLr=valnetLr)
@@ -225,32 +218,16 @@ def train(show=False,
             name = f"net_{ep}"
             a.save(save, name)
 
-def sweep():
-    sweep_configuration = {
-    'method': 'bayes',
-    'name': 'sweep',
-    'metric': {
-        'goal': 'maximize', 
-        'name': 'score'
-        },
-    'parameters': {
-        'trainEvery': {'values': [10, 15, 20, 25, 30, 35, 40, 45, 50]},
-        'valnetLr': {'max': 0.1, 'min': 0.0001},
-        'policyLr': {'max': 0.1, 'min': 0.0001},
-        'switchEvery': {'values': [1, 2, 3, 4, 5]},
-        }
-    }
-    swid = wandb.sweep(sweep=sweep_configuration, project='sweep')
-    wandb.agent(swid, function=train)
-
-def play(load=loadDir, show=False):
+def play(load, show=False):
     g = grid(size=(8, 5), numFood=12, numBomb=12)
     a = bpoAgent(g)
     agent.play(a, g, load=load, show=show)
 
+startVersion = 100000
+#loadDir = f"D:\\wgmn\\deepgrid\\bpo_net_new\\net_{startVersion}"
+loadDir = f"D:\\wgmn\\deepgrid\\bpo_100k"
+saveDir = f"D:\\wgmn\\deepgrid\\bpo_net_new"
 
-torch.manual_seed(0)
-np.random.seed(0)
 if __name__ == "__main__":
     play(load=loadDir, show=False)
     #train(load=None, save=saveDir, valnetLr=0.01, policyLr=0.001, trainEvery=30, switchEvery=3, numEpisodes=100_001, show=False)
