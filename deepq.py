@@ -14,15 +14,11 @@ class model(nn.Module):
         super(model, self).__init__()
         self.gridSize, self.actions, self.lr = gridSize, actions, lr
         width, height = gridSize
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1)
         self.ac1 = nn.LeakyReLU()
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1)
-        self.ac2 = nn.LeakyReLU()
         self.lin1 = nn.Linear(32*height*width, 512)
-        self.ac3 = nn.ReLU()
-        self.lin2 = nn.Linear(512, 64)
-        self.ac4 = nn.ReLU()
-        self.lin3 = nn.Linear(64, self.actions)
+        self.ac2 = nn.ReLU()
+        self.lin2 = nn.Linear(512, self.actions)
         self.to("cuda")
         #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
         self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr, fused=True)
@@ -32,11 +28,9 @@ class model(nn.Module):
         if X.ndim==3: X = X.reshape(1, *sh)
         if not X.is_cuda: X = X.to("cuda")
         X = self.ac1(self.conv1(X))
-        X = self.ac2(self.conv2(X))
         X = X.reshape(X.shape[0], -1)
-        X = self.ac3(self.lin1(X))
-        X = self.ac4(self.lin2(X))
-        X = self.lin3(X)
+        X = self.ac2(self.lin1(X))
+        X = self.lin2(X)
         return X
     def __call__(self, X): return self.forward(X)
 
@@ -151,16 +145,11 @@ class qAgent(agent.agent):
         #self.update()
         return s
 
-startVersion = 100000
-loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
-#loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
-saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
-
 def train(show=False,
-          load=loadDir,
-          save=saveDir,
-          epsilon = 1.0,
-          decayRate = 0.999998,
+          load=None,
+          save=None,
+          epsilon = 0.01,
+          decayRate = 0.999997,
           maxMemory = 10_000,
           saveEvery = 5000,
           switchEvery = 3,
@@ -210,23 +199,25 @@ def train(show=False,
             out, loss = a.train(experience)
             if i%switchEvery==0: a.update()
             
-            wandb.log({"score": epscore, "loss":loss, "epsilon":a.epsilon})
             recents = np.mean(epscores[-200:-1])
             greedscore = (recents - a.epsilon*a.stepCost)/(1-a.epsilon)
+            wandb.log({"score":greedscore, "loss":loss, "epsilon":a.epsilon})
             desc = f"{bold}{purple}scores:{recents:.2f}(={greedscore:.2f}), {cyan}eps:{a.epsilon:.3f}, {red}loss:{loss.detach():.3f}{blue}"
             t.set_description(desc)
         if save is not None and ep%saveEvery == 0:
             name = f"net_{ep}"
             a.save(save, name)
 
-def play(load=loadDir,):
+def play(load):
     g = grid((8, 5), numFood=12, numBomb=12)
     a = qAgent(g)
     agent.play(agent=a, grid=g, load=load)
 
+startVersion = 200000
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
+#loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
+saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
 
-torch.manual_seed(0)
-np.random.seed(0)
 if __name__ == "__main__":
-    play()
-    #train(load=None, save=saveDir, lr=0.0008)
+    play(load=loadDir)
+    #train(load=loadDir, save=saveDir, lr=0.001, switchEvery=3, numEpisodes=10_001)
