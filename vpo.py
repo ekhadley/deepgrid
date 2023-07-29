@@ -8,35 +8,29 @@ from utils import *
 from env import grid
 import agent
 import wandb
+import cProfile
 
 class model(nn.Module):
     def __init__(self, gridSize, actions, lr=.001):
         super(model, self).__init__()
         self.gridSize, self.actions, self.lr = gridSize, actions, lr
         width, height = gridSize
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1)
         self.ac1 = nn.LeakyReLU()
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1)
-        self.ac2 = nn.LeakyReLU()
         self.lin1 = nn.Linear(32*height*width, 512)
-        self.ac3 = nn.ReLU()
-        self.lin2 = nn.Linear(512, 64)
-        self.ac4 = nn.ReLU()
-        self.lin3 = nn.Linear(64, self.actions)
+        self.ac2 = nn.ReLU()
+        self.lin2 = nn.Linear(512, self.actions)
         self.out = nn.Softmax(dim=1)
 
         #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
         self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr)
 
-    def forward(self, X):
-        sh = X.shape
-        if X.ndim==3: X = X.reshape(1, *sh)
+    #@torch.jit.script
+    def forward(self, X:torch.Tensor):
         X = self.ac1(self.conv1(X))
-        X = self.ac2(self.conv2(X))
         X = X.reshape(X.shape[0], -1)
-        X = self.ac3(self.lin1(X))
-        X = self.ac4(self.lin2(X))
-        X = self.out(self.lin3(X))
+        X = self.ac2(self.lin1(X))
+        X = self.out(self.lin2(X))
         return X
     def __call__(self, X): return self.forward(X)
 
@@ -46,7 +40,6 @@ class model(nn.Module):
         logprobs = torch.log(probs)
         wprobs = logprobs*weights
         loss = -torch.mean(wprobs)
-
         if debug:
             print(f"\n{red}{dists=}{endc}")
             print(f"{yellow}{actions=}{endc}")
@@ -92,6 +85,7 @@ class vpoAgent(agent.agent):
     def chooseAction(self, state, greedy=False):
         #if not isinstance(state, Tensor): st = Tensor(state).reshape((1, *state.shape))
         if isinstance(state, np.ndarray): state = torch.from_numpy(state)
+        if state.ndim==3: state = torch.unsqueeze(state, 0)
         dist = torch.flatten(self.policy(state))
         if greedy: action = np.argmax(dist.detach().numpy())
         else: action = sampleDist(dist.detach().numpy())
@@ -124,14 +118,9 @@ class vpoAgent(agent.agent):
         self.actions = []
         self.weights = []
 
-startVersion = 100000
-#loadDir = f"D:\\wgmn\\deepgrid\\vpo_net_new\\net_{startVersion}.pth"
-loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
-saveDir = f"D:\\wgmn\\deepgrid\\vpo_net_new"
-
 def train(show=False,
-          save=saveDir,
-          load=loadDir,
+          save=None,
+          load=None,
           saveEvery = 5000,
           trainEvery = 30,
           lr = 0.001,
@@ -143,7 +132,7 @@ def train(show=False,
     a = vpoAgent(g, lr=lr)
     
     wandb.init(project="vpo")
-    wandb.watch(a.policy, log="all")
+    wandb.watch(a.policy, log="all", log_freq=10)
     if load is not None: a.load(loadDir)
 
     epscores, losses = [], []
@@ -183,11 +172,16 @@ def train(show=False,
             name = f"net_{ep}"
             a.save(save, name)
 
-def play(load=loadDir):
+def play(load, show=False):
     g = grid((8, 5), numFood=12, numBomb=12)
     a = vpoAgent(g)
-    agent.play(a, g, load=load)
+    agent.play(a, g, load=load, show=show)
+
+startVersion = 100000
+loadDir = f"D:\\wgmn\\deepgrid\\vpo_net_new\\net_{startVersion}.pth"
+#loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
+saveDir = f"D:\\wgmn\\deepgrid\\vpo_net_new"
 
 if __name__ == "__main__":
     play(load=loadDir)
-    #train(load=None, save=saveDir, lr=0.001)
+    #train(load=None, save=saveDir, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)
