@@ -37,13 +37,12 @@ class PolicyNet(agent.policynet):
         return dists, los
 
 class vpoAgent(agent.agent):
-    def __init__(self, env, stepCost=0, actions=4, lr=0.001, baseline=False):
+    def __init__(self, env, stepCost=0, actions=4, lr=0.001):
         self.numActions = actions
         self.env = env
         self.score = 0
         self.stepCost = stepCost
         self.policy = PolicyNet(self.env.size, 4, lr=lr)
-        self.baseline = baseline
         self.states = []
         self.actions = []
         self.weights = []
@@ -144,10 +143,10 @@ def play(load, show=False):
     agent.play(a, g, load=load, show=show)
 
 startVersion = 0
-loadDir = f"D:\\wgmn\\deepgrid\\vpo_net_new\\net_{startVersion}.pth"
-#loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
+#loadDir = f"D:\\wgmn\\deepgrid\\vpo_net_new\\net_{startVersion}.pth"
+loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
 saveDir = f"D:\\wgmn\\deepgrid\\vpo_net_new"
 
 if __name__ == "__main__":
-    play(load=loadDir)
-    #train(load=loadDir, save=saveDir, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)
+    #play(load=loadDir)
+    train(load=None, save=saveDir, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)
