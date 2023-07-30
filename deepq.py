@@ -119,6 +119,7 @@ def train(show=False,
           batchSize = 32,
           lr = 0.001,
           numEpisodes = 100_001):
+    trainingStart = 2*batchSize//g.maxSteps
     
     g = grid((8, 5), numFood=12, numBomb=12)
     a = qAgent(g, lr=lr)
@@ -132,7 +133,6 @@ def train(show=False,
     a.maxMemory = maxMemory
 
     epscores, losses = [], []
-    trainingStart = 2*batchSize//g.maxSteps
     for i in (t:=trange(numEpisodes, ncols=120, unit="ep")):
         ep = i + startVersion
         while not g.terminate:
