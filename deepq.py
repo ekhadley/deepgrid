@@ -119,7 +119,6 @@ def train(show=False,
           batchSize = 32,
           lr = 0.001,
           numEpisodes = 100_001):
-    trainingStart = 2*batchSize//g.maxSteps
     
     g = grid((8, 5), numFood=12, numBomb=12)
     a = qAgent(g, lr=lr)
@@ -132,6 +131,7 @@ def train(show=False,
     a.decayRate = decayRate
     a.maxMemory = maxMemory
 
+    trainingStart = 2*batchSize//g.maxSteps
     epscores, losses = [], []
     for i in (t:=trange(numEpisodes, ncols=120, unit="ep")):
         ep = i + startVersion
@@ -177,8 +177,8 @@ def play(load):
     agent.play(agent=a, grid=g, load=load)
 
 startVersion = 0
-loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
-#loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
+#loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
+loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
 saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
 
 if __name__ == "__main__":

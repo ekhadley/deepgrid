@@ -148,5 +148,5 @@ loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
 saveDir = f"D:\\wgmn\\deepgrid\\vpo_net_new"
 
 if __name__ == "__main__":
-    #play(load=loadDir)
-    train(load=None, save=saveDir, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)
+    play(load=loadDir)
+    #train(load=None, save=saveDir, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)

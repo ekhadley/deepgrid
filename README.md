@@ -43,10 +43,10 @@ useful. This is a pretty common property of RL algorithms.
 
 The trained net I have included (trained for the default parameters I gave at the top) has played 100k
 episodes, with a batch size of 64, totalling 6.4 million states seen in training. Its average score is
-75: about human level performance. I had some nice score gains for doing extra training with low epsilon
-(0.05-0.01) after the main training run. Training with higher epsilon at this point actually started
-hurting my performance. Probably an estimation bias going on that causes this. I tried tweaking some
-small things and retraining, But could not crack 70 without going well beyond 100k episodes. Averaging
+~69: just under human level performance. I had some nice score gains for doing extra training with low
+epsilon (0.05-0.01) after the main training run. Training with higher epsilon at this point actually
+started hurting my performance. Probably an estimation bias going on that causes this. I tried tweaking
+some small things and retraining, But could not crack 70 without going well beyond 100k episodes. Averaging
 a score of 75 here seems to be a randomly very good training run/weight initialization. Worth investigating.
 
 ## Vanilla Policy Optimization.
@@ -79,3 +79,23 @@ received *after* taking an action, during that episode.
 The net included has played 100k episodes in training, updating the weights every 10 episodes. It also
 acheives an average score of about 72.
 
+### Baselines
+Also tested was a version of vanilla policy optimization which uses a learned state-value in the
+weight: $\large weight = rtg - V(s_0)$. This version of the weight corresponds to the advantage.
+Here it defintely stabilizes early training, but it doesnt acheive a much bettwe score than vpo.
+
+## Vanilla Actor Critic
+    Actor critic is like vanilla policy gradient methods, but the weight of the policy is given by
+another neural net which estimates the value of a certain state. The value net is trained by temporal
+difference learning like the Q learner, and the policy is updated based on log-probs of actions times
+the weights. The only difference, which I'm not sure is commonplace, is that my early training was 
+very volatile. The policy tends to collapse to the same action at evry step and learning never starts.
+To combat this, I used, instead of $\large V(s_t)$ as the weight at time t, $\large R_t + V(s_{t+1})$.
+This adds a bit of supervision early on, and becuase $\large V(s_t) -> R_t + V(s_{t+1})$ as training
+continues.  
+Something I noticed though is that my value function was not usually close to the real values I was
+collecting at the later stages of training. The policy learns, the episode scores go up, the estimated
+values go up, but just much slower than the policy learns. This is probably not the case in other
+environments, where learning a policy is probably easier/takes fewer training steps than learning the
+actual values. I played around with different loss functions, raising to the power of 4, for ex, instead
+of just mse_loss, to place greater emphasis on outliers, but I don't it they helped much.
