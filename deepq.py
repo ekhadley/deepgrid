@@ -79,7 +79,7 @@ class qAgent(agent.agent):
             for i in range(self.memTypes): self.memory[i].pop(0)
 
     def sampleMemory(self, num, tensor=True, cuda=True):
-        assert len(self.memory[1]) > num, "requested sample size greater than number of recorded experiences"
+        assert len(self.memory[1]) > num, f"{red}{bold}requested sample size of {num} but only have {len(self.valnetmem[1])} experiences{endc}"
         samp = np.random.randint(0, len(self.memory[0]), size=(num))
         
         expSample = [[] for i in range(self.memTypes)]
@@ -182,5 +182,5 @@ loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
 saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
 
 if __name__ == "__main__":
-    play(load=loadDir)
-    #train(load=loadDir, save=saveDir, lr=0.001, switchEvery=3, epsilon=1, decayRate=0.999997, numEpisodes=100_001)
+    #play(load=loadDir)
+    train(load=None, save=None, lr=0.001, switchEvery=3, batchSize=64, epsilon=1, decayRate=0.999997, numEpisodes=100_001)
