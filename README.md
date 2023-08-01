@@ -112,10 +112,10 @@ action prob is higher than the previous one, we take a (>1x) correspondingly lar
 direction. If the current is less than previous, the step gets scaled down. The clip part of PPO-Clip
 refers to the fact that we clip this ratio to a max and min value, (set by epsilon in the code). This
 makes our shit more well behaved in the case of extremes, say where one probability was 0 or extremely
-small. The whole point of this robustness in the face of outdated experience, means that we can take old
+small. The whole point of this robustness in the face of outdated experience, is that we can take old
 data, and train on it multiple times before discarding it. Here this is implemented by storing experiences
 for a number of episodes, then randomly taking a sample, training on that, updating weights, and repeating
 for some number of iterations. This results in greater sample effeciency. PPO methods  derive their
-intentions from Trust Region policy Optimization, which uses much more complicated second order measures
+motivations from Trust Region Policy Optimization, which uses much more complicated second order measures
 to define similarity between policies and safe amounts of difference (regions of trust, if you will) to
 update weights with.
