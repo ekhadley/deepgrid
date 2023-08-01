@@ -8,6 +8,7 @@ from utils import *
 
 class module(nn.Module):
     def __init__(self): super(module, self).__init__()
+    def __call__(self, X): return self.forward(X)
 
     def copy(self, other):
         otherparams = [e for e in other.parameters()]
@@ -44,7 +45,6 @@ class qnet(module):
         X = self.ac2(self.lin1(X))
         X = self.lin2(X)
         return X
-    def __call__(self, X): return self.forward(X)
 
 class policynet(module):
     def __init__(self, gridSize, actions, lr=.001):
@@ -68,8 +68,6 @@ class policynet(module):
         X = self.ac2(self.lin1(X))
         X = self.out(self.lin2(X))
         return X
-    def __call__(self, X): return self.forward(X)
-
 
 class valnet(module):
     def __init__(self, gridSize, lr=.01):
@@ -93,8 +91,6 @@ class valnet(module):
         X = self.ac2(self.lin1(X))
         X = self.lin2(X)
         return torch.flatten(X)
-    def __call__(self, X): return self.forward(X)
-
 
 class agent:
     def __init__(self, *args, **kwargs): raise NotImplementedError
