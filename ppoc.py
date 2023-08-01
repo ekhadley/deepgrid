@@ -178,4 +178,4 @@ saveDir = f"D:\\wgmn\\deepgrid\\ppoc_net_new"
 
 if __name__ == "__main__":
     #play(load=loadDir)
-    train(load=None, save=None, lr=0.001, trainEvery=20, sampleSize=64, trainSteps=3, epsilon=0.15, numEpisodes=100_001, show=False)
+    train(load=None, save=None, lr=0.001, trainEvery=30, sampleSize=64, trainSteps=10, epsilon=0.15, numEpisodes=100_001, show=False)
