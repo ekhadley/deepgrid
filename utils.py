@@ -1,4 +1,7 @@
 import cv2, numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 purple = '\033[95m'
 blue = '\033[94m'
@@ -24,6 +27,10 @@ def sampleDist(probs, returnProb=False):
         if r < c:
             if returnProb: return i, probs[i]
             return i
+
+def entropy(probs):
+    if isinstance(probs, np.ndarray): return -sum([p*np.log(p) for p in probs])
+    if isinstance(probs, torch.Tensor): return -torch.sum(probs*torch.log(probs), axis=1)
 
 def imscale(img, s):
     try:
