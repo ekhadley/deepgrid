@@ -15,8 +15,8 @@ class valueNet(agent.valnet):
         mask = 1-terminal
         nextval = discount*self.forward(nstates)
         trueval = rewards + mask*nextval
-        #loss = F.mse_loss(vals, trueval)
-        loss = torch.mean((vals-trueval)**4)
+        loss = F.mse_loss(vals, trueval)
+        #loss = torch.mean((vals-trueval)**4)
         if debug:
             print(f"\n{blue}{vals=}{endc}")
             print(f"{green}{rewards=}{endc}")
@@ -204,7 +204,7 @@ saveDir = f"D:\\wgmn\\deepgrid\\vac_net_new"
 
 if __name__ == "__main__":
     #play(load=loadDir, show=False)
-    train(load=None, save=None, valnetLr=0.012, policyLr=0.0012, batchSize=64, trainEvery=50, switchEvery=2, maxMemory=300, numEpisodes=100_001, show=False)
+    train(load=None, save=None, valnetLr=0.012, policyLr=0.0012, batchSize=32, trainEvery=30, switchEvery=3, maxMemory=300, numEpisodes=100_001, show=False)
     #sweep()
 
 #prof.disable()

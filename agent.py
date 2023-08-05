@@ -82,7 +82,7 @@ class valnet(module):
         #self.to("cuda")
         
         #self.opt = torch.optim.SGD(self.parameters(), lr=lr)
-        self.opt = torch.optim.AdamW(self.parameters(), lr=lr)
+        self.opt = torch.optim.AdamW(self.parameters(), lr=lr, betas=(0.999, 0.999))
 
     def forward(self, X):
         if X.ndim==3: X = torch.unsqueeze(X, 0)
