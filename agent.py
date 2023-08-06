@@ -34,7 +34,7 @@ class qnet(module):
         self.ac2 = nn.ReLU()
         self.lin2 = nn.Linear(512, self.actions)
         self.to("cuda")
-        #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
+        
         self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr, fused=True)
 
     def forward(self, X):
@@ -58,7 +58,6 @@ class policynet(module):
         self.lin2 = nn.Linear(512, self.actions)
         self.out = nn.Softmax(dim=1)
 
-        #self.opt = nn.optim.SGD([layer.weight for layer in self.layers], lr=self.lr)
         self.opt = torch.optim.AdamW(self.parameters(), lr=self.lr)
 
     def forward(self, X:torch.Tensor):
@@ -81,7 +80,6 @@ class valnet(module):
         self.lin2 = nn.Linear(512, 1)
         #self.to("cuda")
         
-        #self.opt = torch.optim.SGD(self.parameters(), lr=lr)
         self.opt = torch.optim.AdamW(self.parameters(), lr=lr, betas=(0.999, 0.999))
 
     def forward(self, X):

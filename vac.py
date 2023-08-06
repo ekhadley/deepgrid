@@ -204,7 +204,7 @@ saveDir = f"D:\\wgmn\\deepgrid\\vac_net_new"
 
 if __name__ == "__main__":
     #play(load=loadDir, show=False)
-    train(load=None, save=None, valnetLr=0.012, policyLr=0.0012, batchSize=32, trainEvery=30, switchEvery=3, maxMemory=300, numEpisodes=100_001, show=False)
+    train(load=None, save=None, valnetLr=0.012, policyLr=0.0012, batchSize=32, trainEvery=50, switchEvery=3, maxMemory=300, numEpisodes=100_001, show=False)
     #sweep()
 
 #prof.disable()
