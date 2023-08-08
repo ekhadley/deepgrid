@@ -80,7 +80,8 @@ class valnet(module):
         self.lin2 = nn.Linear(512, 1)
         #self.to("cuda")
         
-        self.opt = torch.optim.AdamW(self.parameters(), lr=lr, betas=(0.999, 0.999))
+        self.opt = torch.optim.AdamW(self.parameters(), lr=lr)
+        #self.opt = torch.optim.AdamW(self.parameters(), lr=lr, betas=(0.99, 0.99))
 
     def forward(self, X):
         if X.ndim==3: X = torch.unsqueeze(X, 0)

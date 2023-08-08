@@ -122,11 +122,11 @@ def train(show=False,
     
     g = grid((8, 5), numFood=12, numBomb=12)
     a = qAgent(g, lr=lr)
+    if load is not None: a.load(loadDir)
 
     wandb.init(project="deepq")
     wandb.watch(a.target, log="all")
     
-    if load is not None: a.load(loadDir)
     a.epsilon = epsilon
     a.decayRate = decayRate
     a.maxMemory = maxMemory

@@ -195,8 +195,8 @@ def play(load, show=False):
     agent.play(a, g, load=load, show=show)
 
 startVersion = 0
-loadDir = f"D:\\wgmn\\deepgrid\\vac_net_new\\net_{startVersion}"
-#loadDir = f"D:\\wgmn\\deepgrid\\vac_80k"
+#loadDir = f"D:\\wgmn\\deepgrid\\vac_net_new\\net_{startVersion}"
+loadDir = f"D:\\wgmn\\deepgrid\\vac_100k"
 saveDir = f"D:\\wgmn\\deepgrid\\vac_net_new"
 
 #prof = cProfile.Profile()
