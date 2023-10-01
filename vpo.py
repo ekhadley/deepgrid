@@ -144,8 +144,8 @@ def play(load, show=False):
 
 startVersion = 0
 #loadDir = f"D:\\wgmn\\deepgrid\\vpo_net_new\\net_{startVersion}.pth"
-loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
-saveDir = f"D:\\wgmn\\deepgrid\\vpo_net_new"
+loadDir = f"E:\\wgmn\\deepgrid\\vpo_100k.pth"
+saveDir = f"E:\\wgmn\\deepgrid\\vpo_net_new"
 
 if __name__ == "__main__":
     play(load=loadDir)

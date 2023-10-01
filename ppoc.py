@@ -173,9 +173,9 @@ def play(load, show=False):
 
 startVersion = 0
 #loadDir = f"D:\\wgmn\\deepgrid\\ppo_net_new\\net_{startVersion}.pth"
-loadDir = f"D:\\wgmn\\deepgrid\\ppoc_100k.pth"
-saveDir = f"D:\\wgmn\\deepgrid\\ppoc_net_new"
+loadDir = f"E:\\wgmn\\deepgrid\\ppoc_net_new\\net_40000.pth"
+saveDir = f"E:\\wgmn\\deepgrid\\ppoc_net_new"
 
 if __name__ == "__main__":
-    #play(load=loadDir)
-    train(load=None, save=None, lr=0.001, trainEvery=30, sampleSize=64, trainSteps=10, epsilon=0.15, numEpisodes=100_001, show=False)
+    play(load=loadDir, show=True)
+    #train(load=None, save=saveDir, lr=0.001, trainEvery=30, sampleSize=64, trainSteps=10, epsilon=0.15, numEpisodes=100_001, show=False)

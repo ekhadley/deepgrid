@@ -196,8 +196,8 @@ def play(load, show=False):
 
 startVersion = 0
 #loadDir = f"D:\\wgmn\\deepgrid\\vac_net_new\\net_{startVersion}"
-loadDir = f"D:\\wgmn\\deepgrid\\vac_100k"
-saveDir = f"D:\\wgmn\\deepgrid\\vac_net_new"
+loadDir = f"E:\\wgmn\\deepgrid\\vac_100k"
+saveDir = f"E:\\wgmn\\deepgrid\\vac_net_new"
 
 #prof = cProfile.Profile()
 #prof.enable()

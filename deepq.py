@@ -178,9 +178,9 @@ def play(load):
 
 startVersion = 0
 #loadDir = f"D:\\wgmn\\deepgrid\\deepq_net_new\\net_{startVersion}.pth"
-loadDir = f"D:\\wgmn\\deepgrid\\deepq_100k.pth"
-saveDir = f"D:\\wgmn\\deepgrid\\deepq_net_new"
+loadDir = f"E:\\wgmn\\deepgrid\\deepq_100k.pth"
+saveDir = f"E:\\wgmn\\deepgrid\\deepq_net_new"
 
 if __name__ == "__main__":
-    #play(load=loadDir)
-    train(load=None, save=None, lr=0.001, switchEvery=3, batchSize=64, epsilon=1, decayRate=0.999997, numEpisodes=100_001)
+    play(load=loadDir)
+    #train(load=None, save=None, lr=0.001, switchEvery=3, batchSize=64, epsilon=1, decayRate=0.999997, numEpisodes=100_001)
