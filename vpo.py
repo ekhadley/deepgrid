@@ -3,25 +3,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from tqdm import trange
-import os, time
+import wandb
+
 from utils import *
 from env import grid
 import agent
-import wandb
-import cProfile
+np.set_printoptions(suppress=True, linewidth=200, precision=4)
+torch.set_printoptions(threshold=100, sci_mode=False, linewidth=1000, precision=4, edgeitems=4)
 
 class PolicyNet(agent.policynet):
     def loss(self, dists:torch.tensor, actions:torch.tensor, weights:torch.tensor, debug=False):
-        masked = dists*actions
-        probs = torch.sum(masked, axis=-1)
+        probs = torch.sum(dists*actions, dim=1)
         logprobs = torch.log(probs)
         wprobs = logprobs*weights
         loss = -torch.mean(wprobs)
         if debug:
             print(f"\n{red}{dists=}{endc}")
             print(f"{yellow}{actions=}{endc}")
-            print(f"{bold}{masked=}{endc}")
-            print(f"{blue}{probs=}{endc}")
+            print(f"{gray}H(probs)={torch.mean(-logprobs).item():.4f}{endc}")
+            print(f"{pink}{probs=}{endc}")
             print(f"{green}{logprobs=}{endc}")
             print(f"{purple}{weights=}{endc}")
             print(f"{cyan}{wprobs=}{endc}\n\n")
@@ -125,7 +125,7 @@ def train(show=False,
         epscore = a.reset()
         epscores.append(epscore)
         if i != 0 and i%trainEvery==0:
-            dists, loss = a.train()
+            dists, loss = a.train(debug=True)
             a.forget()
             
             wandb.log({"score": epscore, "loss":loss})
@@ -147,6 +147,9 @@ startVersion = 0
 loadDir = f"E:\\wgmn\\deepgrid\\vpo_100k.pth"
 saveDir = f"E:\\wgmn\\deepgrid\\vpo_net_new"
 
+
+#import cProfile
+
 if __name__ == "__main__":
-    play(load=loadDir)
-    #train(load=None, save=saveDir, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)
+    #play(load=loadDir)
+    train(load=None, save=None, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)
