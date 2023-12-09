@@ -94,7 +94,7 @@ difference learning like the Q learner, and the policy is updated based on log-p
 the weights. The only difference, which I'm not sure is commonplace, is that my early training was 
 very volatile. The policy tends to collapse to the same action at evry step and learning never starts.
 To combat this, I used, instead of $\large V(s_t)$ as the weight at time t, $\large R_t + V(s_{t+1})$.
-This adds a bit of supervision early on, and becuase $\large V(s_t) -> R_t + V(s_{t+1})$ as training
+This adds a bit of supervision early on, and becuase $\large V(s_t) \rightarrow R_t + V(s_{t+1})$ as training
 continues.  
 Something I noticed though is that my value function was not usually close to the real values I was
 collecting at the later stages of training. The policy learns, the episode scores go up, the estimated
