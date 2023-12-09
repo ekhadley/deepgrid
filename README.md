@@ -69,8 +69,8 @@ $\large Loss(state, actionProbability, weight) = -ln(actionProbability)*weight$
 . Note that $\large R(\tau, \alpha)$ is not the only choice that can be made. Several choices, all related to
 the wider concept of the "value" of a particular  set of actions or states, can be chosen. 
 
-This algorithm is on-policy, or online, meaning we can only update our policy using experience collected
-with this exact version. Once we update our weights, the experience we collected cannot be used again.
+This algorithm is on-policy, or online, meaning we can only update our policy using experience generated
+by the current exact weights. Once we update our weights, the experience we collected cannot be used again.
 
 In the files, vanilla and vpo refer to vanilla policy optimization. rtg refers to the fact that the
 "weight" of each action in the loss function is the so-called "reward-to-go": the sum of all rewards
@@ -85,7 +85,7 @@ weight: $\large weight = rtg - V(s_0)$. This version of the weight corresponds t
 Here it defintely stabilizes early training, but it doesnt acheive a much bettwe score than vpo.
 
 ## Vanilla Actor Critic
-    Actor critic is like vanilla policy gradient methods, but the weight of the policy is given by
+Actor critic is like vanilla policy gradient methods, but the weight of the policy is given by
 another neural net which estimates the value of a certain state. The value net is trained by temporal
 difference learning like the Q learner, and the policy is updated based on log-probs of actions times
 the weights. The only difference, which I'm not sure is commonplace, is that my early training was 
@@ -100,7 +100,7 @@ loss functions, raising to the power of 4, for ex, instead of just mse_loss, to 
 on outliers, but they didn't help much.
 
 ## PPO-Clip
-    Proximal Policy Optimization algorithms are motivated by the question: how can i reuse old experience?
+Proximal Policy Optimization algorithms are motivated by the question: how can i reuse old experience?
 The problem with training on experience that was generated with a previous version of the policy net
 is that it suggests updates for the policy's weights which may not actually increase the expected rewards
 for the current policy. The way PPO (and its parent, TRPO) address this is to remember, for each transition
