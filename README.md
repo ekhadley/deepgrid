@@ -70,7 +70,10 @@ $\large Loss(state, actionProbability, weight) = -ln(actionProbability)*weight$
 the wider concept of the "value" of a particular  set of actions or states, can be chosen. 
 
 This algorithm is on-policy, or online, meaning we can only update our policy using experience generated
-by the current exact weights. Once we update our weights, the experience we collected cannot be used again.
+by the current exact weights. Once we update our weights, we throw all our experience out the window. Note
+that this is an undesirable and ineffecient property, and not the case in Q learning. Off policy learning
+employs methods that allow us to gain data effeciency by recycling, at the cost of training on potentially
+stale experience.
 
 In the files, vanilla and vpo refer to vanilla policy optimization. rtg refers to the fact that the
 "weight" of each action in the loss function is the so-called "reward-to-go": the sum of all rewards
@@ -100,7 +103,7 @@ loss functions, raising to the power of 4, for ex, instead of just mse_loss, to 
 on outliers, but they didn't help much.
 
 ## PPO-Clip
-Proximal Policy Optimization algorithms are motivated by the question: how can i reuse old experience?
+Proximal Policy Optimization algorithms are offline. They ask: how can I reuse old experience?
 The problem with training on experience that was generated with a previous version of the policy net
 is that it suggests updates for the policy's weights which may not actually increase the expected rewards
 for the current policy. The way PPO (and its parent, TRPO) address this is to remember, for each transition
