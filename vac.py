@@ -27,12 +27,14 @@ class valueNet(agent.valnet):
             print(f"{yellow}{loss=}{endc}\n\n\n")
         return loss
 
-    def train(self, states, rewards, nstates, terminals, discount=1.0, debug=False):
+    def _train(self, states, rewards, nstates, terminals, discount=1.0, debug=False):
+        self.train()
         vals = self.forward(states)
         los = self.loss(vals, rewards, nstates, terminals, discount=discount, debug=debug)
         self.opt.zero_grad()
         los.backward()
         self.opt.step()
+        self.eval()
         return vals, los
 
 
@@ -46,6 +48,8 @@ class vacAgent(agent.agent):
         self.policy = vpo.PolicyNet(self.env.size, 4, lr=policyLr) #we borrow the policy net architecture from our vpo implementation
         self.target = valueNet(self.env.size, lr=valnetLr)
         self.main = valueNet(self.env.size, lr=self.target.lr)
+        self.target.eval()
+        self.main.eval()
         self.update()
         # policy updates need states, actions, weights from the valnet
         # valnet updates need states, rewards, next states, terminal_state
@@ -86,7 +90,7 @@ class vacAgent(agent.agent):
 
     def trainValnet(self, experience, debug=False):
         states, rewards, nstates, terminals = experience
-        vals, loss = self.target.train(states, rewards, nstates, terminals, debug=debug)
+        vals, loss = self.target._train(states, rewards, nstates, terminals, debug=debug)
         return vals, loss
     def sampleMemory(self, num, tensor=True):
         assert len(self.valnetmem[1]) > num, f"{red}{bold}requested sample size of {num} but only have {len(self.valnetmem[1])} experiences{endc}"
@@ -144,6 +148,11 @@ def train(show=False,
         print(f"{green}attemping load from {loadDir}{endc}")
         a.load(loadDir) 
 
+    #qqq = vacAgent(g, policyLr=policyLr, valnetLr=valnetLr, maxMemory=maxMemory)
+    #qqq.load(f"D:\\wgmn\\deepgrid\\vac_100k")
+    #a.main.copy(qqq.main)
+    #a.target.copy(qqq.target)
+
     trainingStart = 2*batchSize//g.maxSteps
     epscores, losses = [], []
     for i in (t:=trange(numEpisodes, ncols=120, unit="ep")):
@@ -172,9 +181,10 @@ def train(show=False,
         g.reset()
         epscore = a.reset()
         epscores.append(epscore)
-        if i >= trainingStart:
+        if i >= trainingStart and i%trainEvery == 0:
             experience = a.sampleMemory(batchSize)
             vals, vLoss = a.trainValnet(experience)
+
             if i%switchEvery==0: a.update()
         if i != 0 and i%trainEvery==0:
             dists, pLoss = a.trainPolicy()
@@ -182,7 +192,7 @@ def train(show=False,
             
             recents = np.mean(epscores[-200:-1])
             d = np.array_str(dist.detach().numpy(), precision=3, suppress_small=True)
-            desc = f"{bold}{blue}scores:{recents:.2f}, {blue}dist={d}, {green}val={ival:.2f} {endc}{blue}"
+            desc = f"{bold}{cyan}scores:{recents:.2f}, {blue}dist={d}, {green}val={ival:.2f} {endc}{blue}"
             t.set_description(desc)
             wandb.log({"epscore": epscore, "policy_loss":pLoss, "valnet_loss":vLoss, "val":ival, "score":recents})
         if save is not None and i%saveEvery == 0:
@@ -196,15 +206,21 @@ def play(load, show=False):
 
 startVersion = 0
 #loadDir = f"D:\\wgmn\\deepgrid\\vac_net_new\\net_{startVersion}"
-loadDir = f"E:\\wgmn\\deepgrid\\vac_100k"
-saveDir = f"E:\\wgmn\\deepgrid\\vac_net_new"
+loadDir = f"D:\\wgmn\\deepgrid\\vac_100k"
+saveDir = f"D:\\wgmn\\deepgrid\\vac_net_new"
 
 #prof = cProfile.Profile()
 #prof.enable()
 
+# TODO: in basically all value net models i trained, the value estimator was perpetually too low.
+# TODO: it rose as learning occurred, but fell off early and lagged behind true scores.
+# TODO: identify wether this is due to the distribution over true values being unbalanced
+# TODO: by sampling from memory with copies or smthn to make it uniform, or try batchnorm or smthn
+
+# NOTE: also why does training a policy from scratch with a high scoring policie's valuenet not really help?
 if __name__ == "__main__":
-    #play(load=loadDir, show=False)
-    train(load=None, save=None, valnetLr=0.012, policyLr=0.0012, batchSize=32, trainEvery=50, switchEvery=3, maxMemory=300, numEpisodes=100_001, show=False)
+    train(load=None, save=saveDir, valnetLr=0.012, policyLr=0.0012, batchSize=32, trainEvery=50, switchEvery=3, maxMemory=300, numEpisodes=100_001, show=False)
+    play(load=saveDir, show=True)
     #sweep()
 
 #prof.disable()

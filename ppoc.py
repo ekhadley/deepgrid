@@ -173,8 +173,8 @@ def play(load, show=False):
 
 startVersion = 0
 #loadDir = f"D:\\wgmn\\deepgrid\\ppo_net_new\\net_{startVersion}.pth"
-loadDir = f"E:\\wgmn\\deepgrid\\ppoc_net_new\\net_40000.pth"
-saveDir = f"E:\\wgmn\\deepgrid\\ppoc_net_new"
+loadDir = f"D:\\wgmn\\deepgrid\\ppoc_net_new\\net_40000.pth"
+saveDir = f"D:\\wgmn\\deepgrid\\ppoc_net_new"
 
 if __name__ == "__main__":
     play(load=loadDir, show=True)

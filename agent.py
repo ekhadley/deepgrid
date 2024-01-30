@@ -53,8 +53,10 @@ class policynet(module):
         width, height = gridSize
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1)
         self.ac1 = nn.LeakyReLU()
+        
         self.lin1 = nn.Linear(32*height*width, 512)
         self.ac2 = nn.ReLU()
+        
         self.lin2 = nn.Linear(512, self.actions)
         self.out = nn.Softmax(dim=1)
 
@@ -74,9 +76,13 @@ class valnet(module):
         self.gridSize, self.lr = gridSize, lr
         width, height = gridSize
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1)
+        #self.bn1 = nn.BatchNorm2d(32)
         self.ac1 = nn.LeakyReLU()
+        
         self.lin1 = nn.Linear(32*height*width, 512)
+        #self.bn2 = nn.BatchNorm1d(512)
         self.ac2 = nn.ReLU()
+
         self.lin2 = nn.Linear(512, 1)
         #self.to("cuda")
         
@@ -85,8 +91,12 @@ class valnet(module):
 
     def forward(self, X):
         if X.ndim==3: X = torch.unsqueeze(X, 0)
+        #X = self.ac1(self.bn1(self.conv1(X)))
+        #X = X.flatten(start_dim=1)
+        #X = self.ac2(self.bn2(self.lin1(X)))
+        #X = self.lin2(X)
         X = self.ac1(self.conv1(X))
-        X = X.reshape(X.shape[0], -1)
+        X = X.flatten(start_dim=1)
         X = self.ac2(self.lin1(X))
         X = self.lin2(X)
         return torch.flatten(X)
