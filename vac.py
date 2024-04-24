@@ -127,6 +127,7 @@ class vacAgent(agent.agent):
     def forget(self):
         self.policymem = [[], [], []]
 
+rrr = [[] for i in range(16)]
 def train(show=False,
           save=None,
           load=None,
@@ -139,7 +140,7 @@ def train(show=False,
           policyLr = 0.001,
           valnetLr = 0.001):
 
-    g = grid((8, 5), numFood=12, numBomb=12)
+    g = grid((8, 5), numFood=12, numBomb=12, foodReward=1, bombReward=-1)
     a = vacAgent(g, policyLr=policyLr, valnetLr=valnetLr, maxMemory=maxMemory)
     
     wandb.init(project="vac")
@@ -158,6 +159,7 @@ def train(show=False,
     for i in (t:=trange(numEpisodes, ncols=120, unit="ep")):
         ep = i + startVersion
         ival = a.getVal(g.observe())
+        rtg = []
         while not g.terminate:
             state = g.observe()
             action, dist = a.chooseAction(state)
@@ -165,11 +167,15 @@ def train(show=False,
             nstate = g.observe(tensor=False)
 
             hot = np.eye(a.numActions)[action]
-            
+
             vnext = a.getVal(nstate)
             weight = reward + vnext
-            
+
             a.remember(state, hot, reward, weight, nstate, 1*g.terminate)
+
+            #rtg = [e + reward for e in rtg]
+            #rtg.append(reward)
+            #print(f"{red}{i}: {rtg=}{endc}")
 
             if show:
                 im = g.view()
@@ -192,9 +198,9 @@ def train(show=False,
             
             recents = np.mean(epscores[-200:-1])
             d = np.array_str(dist.detach().numpy(), precision=3, suppress_small=True)
-            desc = f"{bold}{cyan}scores:{recents:.2f}, {blue}dist={d}, {green}val={ival:.2f} {endc}{blue}"
+            desc = f"{bold}{cyan}scores:{10*recents:.2f}, {blue}dist={d}, {green}val={10*ival:.2f} {endc}{blue}"
             t.set_description(desc)
-            wandb.log({"epscore": epscore, "policy_loss":pLoss, "valnet_loss":vLoss, "val":ival, "score":recents})
+            wandb.log({"epscore": 10*epscore, "policy_loss":pLoss, "valnet_loss":vLoss, "val":10*ival, "score":10*recents})
         if save is not None and i%saveEvery == 0:
             name = f"net_{ep}"
             a.save(save, name)
@@ -213,13 +219,14 @@ saveDir = f"D:\\wgmn\\deepgrid\\vac_net_new"
 #prof.enable()
 
 # TODO: in basically all value net models i trained, the value estimator was perpetually too low.
-# TODO: it rose as learning occurred, but fell off early and lagged behind true scores.
-# TODO: identify wether this is due to the distribution over true values being unbalanced
-# TODO: by sampling from memory with copies or smthn to make it uniform, or try batchnorm or smthn
+# it rose as learning occurred, but fell off early and lagged behind true scores.
+# identify wether this is due to the distribution over true values being unbalanced
+# across time steps. Most of the time available points are low (there is usually downtime
+# at the end of an episode where the agent is just waiting for the game to end).
 
 # NOTE: also why does training a policy from scratch with a high scoring policie's valuenet not really help?
 if __name__ == "__main__":
-    train(load=None, save=saveDir, valnetLr=0.012, policyLr=0.0012, batchSize=32, trainEvery=50, switchEvery=3, maxMemory=300, numEpisodes=100_001, show=False)
+    train(load=None, save=None, valnetLr=0.02, policyLr=0.001, batchSize=32, trainEvery=50, switchEvery=3, maxMemory=300, numEpisodes=100_001, show=False)
     play(load=saveDir, show=True)
     #sweep()
 
