@@ -149,11 +149,6 @@ def train(show=False,
         print(f"{green}attemping load from {loadDir}{endc}")
         a.load(loadDir) 
 
-    #qqq = vacAgent(g, policyLr=policyLr, valnetLr=valnetLr, maxMemory=maxMemory)
-    #qqq.load(f"D:\\wgmn\\deepgrid\\vac_100k")
-    #a.main.copy(qqq.main)
-    #a.target.copy(qqq.target)
-
     trainingStart = 2*batchSize//g.maxSteps
     epscores, losses = [], []
     for i in (t:=trange(numEpisodes, ncols=120, unit="ep")):

@@ -151,5 +151,5 @@ saveDir = f"D:\\wgmn\\deepgrid\\vpo_net_new"
 #import cProfile
 
 if __name__ == "__main__":
-    #play(load=loadDir, show=True)
-    train(load=None, save=None, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)
+    play(load=loadDir, show=True)
+    #train(load=None, save=None, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)
