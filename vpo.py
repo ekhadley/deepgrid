@@ -99,7 +99,7 @@ def train(show=False,
     wandb.watch(a.policy, log="all", log_freq=10)
     if load is not None: a.load(loadDir)
 
-    epscores, losses = [], []
+    epscores, _losses = [], []
     for i in (t:=trange(numEpisodes, ncols=110, unit="ep")):
         ep = i + startVersion
         states, rtg, actions = [], [], []
