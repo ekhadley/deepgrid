@@ -1,10 +1,10 @@
-import cv2, numpy as np
+import cv2
+import numpy as np
 from tqdm import trange
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import os
-from utils import *
+from utils import red, blue, yellow, purple, cyan, endc
 
 class module(nn.Module):
     def __init__(self): super(module, self).__init__()
@@ -142,7 +142,7 @@ def play(agent, grid, show=False, load=None):
         while not grid.terminate:
             state = grid.observe()
             action, pred = agent.chooseAction(state)
-            reward = agent.doAction(action)
+            _reward = agent.doAction(action)
             
             #print(f"taking action {yellow}{action}{endc} gave a reward of {purple}{reward:.2f}{endc}. The agent now has a score of {cyan}{a.score:.2f}{endc} on step {g.stepsTaken}/{g.maxSteps}")
             #print(f"{green}{pred=}{endc}")
