@@ -1,13 +1,12 @@
+import cv2
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
 from tqdm import trange
 import wandb
-
-from utils import *
+from utils import sampleDist, bold, red, blue, yellow, purple, cyan, green, pink, gray, endc
 from env import grid
 import agent
+
 np.set_printoptions(suppress=True, linewidth=200, precision=4)
 torch.set_printoptions(threshold=100, sci_mode=False, linewidth=1000, precision=4, edgeitems=4)
 
@@ -144,8 +143,8 @@ def play(load, show=False):
 
 startVersion = 0
 #loadDir = f"D:\\wgmn\\deepgrid\\vpo_net_new\\net_{startVersion}.pth"
-loadDir = f"D:\\wgmn\\deepgrid\\vpo_100k.pth"
-saveDir = f"D:\\wgmn\\deepgrid\\vpo_net_new"
+loadDir = "D:\\wgmn\\deepgrid\\vpo_100k.pth"
+saveDir = "D:\\wgmn\\deepgrid\\vpo_net_new"
 
 
 #import cProfile
