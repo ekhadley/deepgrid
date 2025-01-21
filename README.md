@@ -5,7 +5,7 @@ giving a reward, and bombs (x), giving negative reward. Default parameters are: 
 steps/ep, 0 step cost, +-10 for food/bomb, 12 of each, running into a wall does nothing, random
 starting position every ep.
 <pre>
-[![Watch the video](https://raw.githubusercontent.com/ekhadley/deepgrid/refs/heads/main/vpo_demo.gif)](https://raw.githubusercontent.com/ekhadley/deepgrid/refs/heads/main/vpo_demo.gif)
+https://raw.githubusercontent.com/ekhadley/deepgrid/refs/heads/main/vpo_demo.gif
 </pre>
 The main goal of agents in this environment is to learn how to choose paths which pick up the greatest
 number of rewards per step. Because the default number of steps is only 16, you can only really choose
