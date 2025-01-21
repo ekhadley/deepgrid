@@ -3,15 +3,9 @@ This is my implementation of a few different deep RL algorithms, all applied to 
 environment. It is a small grid in which you have an agent (@), what I have termed food (o),
 giving a reward, and bombs (x), giving negative reward. Default parameters are: 8x5 grid, 16
 steps/ep, 0 step cost, +-10 for food/bomb, 12 of each, running into a wall does nothing, random
-starting position every ep. Example starting state:
+starting position every ep.
 <pre>
-##########################
-# o  o     x  x  o  x  o #
-# o  x  x  x        o    #
-# o  o           @  x  o #
-#    x  x  x     o  o  x #
-#                o     x #
-##########################
+[![hi](https://github.com/ekhadley/deepgrid/blob/main/vpo_demo.gif)](https://github.com/ekhadley/deepgrid/blob/main/vpo_demo.gif)
 </pre>
 The main goal of agents in this environment is to learn how to choose paths which pick up the greatest
 number of rewards per step. Because the default number of steps is only 16, you can only really choose
