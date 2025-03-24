@@ -143,12 +143,12 @@ def play(load, show=False):
 
 startVersion = 0
 #loadDir = f"D:\\wgmn\\deepgrid\\vpo_net_new\\net_{startVersion}.pth"
-loadDir = "D:\\wgmn\\deepgrid\\vpo_100k.pth"
-saveDir = "D:\\wgmn\\deepgrid\\vpo_net_new"
+loadDir = "C:\\Users\\ekhad\\Desktop\\wgmn\\deepgrid\\vpo_100k.pth"
+saveDir = "C:\\Users\\ekhad\\Desktop\\wgmn\\deepgrid\\vpo_net_new"
 
 
 #import cProfile
 
 if __name__ == "__main__":
-    play(load=loadDir, show=True)
-    #train(load=None, save=None, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)
+    #play(load=loadDir, show=True)
+    train(load=None, save=None, lr=0.0012, trainEvery=50, numEpisodes=100_001, show=False)
